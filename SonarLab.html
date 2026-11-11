@@ -1,0 +1,1078 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#e9eee8">
+  <title>Side-scan Sonar Lab</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #e9eee8;
+      --panel: #ffffff;
+      --ink: #203431;
+      --muted: #6b7c74;
+      --line: #d7dfd8;
+      --deep: #18332f;
+      --deep-grid: #31504a;
+      --orange: #f49a63;
+      --orange-dark: #a23f22;
+      --mint: #7fcbba;
+      --sea: #dcebe8;
+      --floor: #60796b;
+      --shadow: 0 8px 26px rgb(34 55 46 / 7%);
+      font-family: "Aptos", "Trebuchet MS", sans-serif;
+      color: var(--ink);
+      background: var(--paper);
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      background-color: var(--paper);
+      background-image: linear-gradient(135deg, rgb(255 255 255 / 54%), transparent 58%);
+    }
+
+    button, input { font: inherit; }
+
+    .app-shell {
+      width: min(1540px, 100%);
+      height: 100vh;
+      min-height: 680px;
+      margin: 0 auto;
+      padding: 22px clamp(14px, 2.3vw, 34px) 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      min-height: 50px;
+    }
+
+    .brand { display: flex; align-items: center; gap: 13px; }
+    .brand-mark {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      border: 1px solid #aac2b8;
+      border-radius: 50%;
+      color: #29564b;
+      background: #f8faf7;
+    }
+    .brand-mark svg { width: 22px; height: 22px; }
+    .brand h1 {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 23px;
+      font-weight: 500;
+      line-height: 1.1;
+    }
+    .brand p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.1px;
+    }
+    .top-meta {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      color: #53665e;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .7px;
+    }
+    .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #5b9b78; box-shadow: 0 0 0 4px rgb(91 155 120 / 15%); }
+
+    .workspace {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 248px minmax(0, 1fr);
+      align-items: stretch;
+      gap: 16px;
+    }
+
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      padding: 18px 16px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .control-group + .control-group { padding-top: 16px; border-top: 1px solid var(--line); }
+    .group-title, .eyebrow {
+      margin: 0 0 11px;
+      color: #587168;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 1px;
+    }
+
+    .tool-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+    .tool-button {
+      min-width: 0;
+      min-height: 55px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 6px 3px;
+      border: 1px solid transparent;
+      border-radius: 5px;
+      color: #586b63;
+      background: #f4f7f4;
+      cursor: pointer;
+      font-size: 10px;
+      font-weight: 700;
+      transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+    }
+    .tool-button:hover { border-color: #b6cbc1; color: #214a40; }
+    .tool-button[aria-pressed="true"] { border-color: #78a695; color: #173d35; background: #e6f0eb; }
+    .tool-icon { width: 16px; height: 16px; display: block; position: relative; }
+    .tool-icon.select::before { content: ""; position: absolute; inset: 1px 5px 1px 1px; border-left: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: skewY(-32deg); }
+    .tool-icon.rectangle { border: 1.6px solid currentColor; border-radius: 1px; }
+    .tool-icon.ellipse { border: 1.6px solid currentColor; border-radius: 50%; }
+    .tool-icon.line::before { content: ""; position: absolute; left: 1px; top: 7px; width: 14px; border-top: 2px solid currentColor; transform: rotate(-35deg); }
+    .tool-icon.freehand::before { content: ""; position: absolute; inset: 2px 0 1px; border: 1.7px solid currentColor; border-color: currentColor transparent currentColor currentColor; border-radius: 55% 40% 50% 35%; transform: rotate(-28deg); }
+    .delete-button {
+      width: 100%;
+      min-height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 9px;
+      border: 1px solid #e1d4ce;
+      border-radius: 4px;
+      color: #8b4937;
+      background: #fffaf8;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .delete-button:hover:not(:disabled) { border-color: #c97b64; background: #fff1eb; }
+    .delete-button:disabled { border-color: #e6e9e5; color: #9da8a2; background: #f7f8f6; cursor: not-allowed; }
+    .delete-icon { width: 14px; height: 14px; flex: none; }
+    .delete-button kbd { padding: 2px 4px; border: 1px solid currentColor; border-radius: 3px; font: inherit; font-size: 9px; }
+
+    .range-setting { display: block; margin-top: 14px; }
+    .range-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+    .range-heading label { color: #40564d; font-size: 12px; font-weight: 650; }
+    .range-value { min-width: 42px; color: #254c41; text-align: right; font-size: 12px; font-variant-numeric: tabular-nums; font-weight: 800; }
+    input[type="range"] { width: 100%; height: 18px; margin: 0; accent-color: #c15b36; cursor: pointer; }
+    .range-bounds { display: flex; justify-content: space-between; color: #8a9991; font-size: 10px; }
+
+    .check-list { display: grid; gap: 9px; margin-top: 15px; }
+    .check-row { display: flex; align-items: center; gap: 9px; color: #40564d; font-size: 11px; font-weight: 650; cursor: pointer; }
+    .check-row input { width: 15px; height: 15px; margin: 0; accent-color: #28735f; }
+
+    .action-stack { display: grid; gap: 7px; margin-top: auto; }
+    .ping-button, .reset-button {
+      min-height: 40px;
+      border: 0;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 750;
+      transition: background-color 120ms ease, transform 120ms ease;
+    }
+    .ping-button { color: #fff; background: var(--orange-dark); box-shadow: 0 3px 0 #773019; }
+    .ping-button:hover { background: #8c371f; }
+    .ping-button:active { transform: translateY(2px); box-shadow: 0 1px 0 #773019; }
+    .reset-button { border: 1px solid var(--line); color: #465950; background: #f8faf8; }
+    .reset-button:hover { background: #edf3ee; }
+    button:focus-visible, input:focus-visible { outline: 3px solid #e1a16e; outline-offset: 2px; }
+
+    .visuals { min-width: 0; min-height: 0; display: grid; grid-template-rows: minmax(0, 1.25fr) minmax(210px, .75fr); gap: 14px; }
+    .panel {
+      min-width: 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 13px 15px 15px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+    .panel-head { min-height: 28px; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+    .panel-title { margin: 0; color: #31564b; font-size: 11px; font-weight: 800; letter-spacing: .8px; }
+    .panel-detail { color: #829189; font-size: 10px; font-weight: 700; letter-spacing: .35px; text-align: right; }
+    .scene-wrap { flex: 1; min-height: 0; overflow: hidden; border-radius: 3px; background: var(--sea); }
+    canvas { display: block; }
+    #scene { width: 100%; height: 100%; min-height: 0; touch-action: none; cursor: crosshair; }
+    .legend { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 14px; }
+    .legend-item { display: inline-flex; align-items: center; gap: 6px; color: #586c62; white-space: nowrap; font-size: 10px; font-weight: 700; }
+    .legend-line { width: 20px; height: 0; border-top: 2px solid var(--orange); }
+    .legend-line.mint { border-color: var(--mint); }
+    .plot-wrap { flex: 1; min-height: 0; overflow: hidden; border-radius: 3px; background: var(--deep); }
+    #plot { width: 100%; height: 100%; min-height: 0; }
+
+    .statusbar {
+      min-height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: #64766d;
+      font-size: 11px;
+    }
+    #status { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .status-right { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; color: #77877f; font-size: 10px; font-weight: 700; }
+    .status-right::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #d4794e; }
+
+    @media (min-height: 900px) and (min-width: 900px) {
+      .app-shell { padding-top: 28px; gap: 22px; }
+      .visuals { grid-template-rows: minmax(390px, 1fr) minmax(260px, .72fr); }
+    }
+    @media (max-width: 850px) {
+      .workspace { grid-template-columns: 210px minmax(0, 1fr); gap: 10px; }
+      .controls { padding: 14px 12px; }
+      .visuals { grid-template-rows: minmax(250px, 1fr) minmax(205px, .8fr); }
+      .panel { padding: 10px; }
+      .panel-detail { display: none; }
+    }
+    @media (max-width: 650px) {
+      .app-shell { height: auto; min-height: 100vh; padding: 13px 12px 12px; gap: 12px; }
+      .topbar { min-height: 44px; }
+      .brand-mark { width: 34px; height: 34px; }
+      .brand h1 { font-size: 20px; }
+      .brand p { font-size: 9px; }
+      .top-meta { font-size: 9px; }
+      .workspace { grid-template-columns: 1fr; align-content: start; }
+      .workspace { flex: 0 0 auto; }
+      .controls { display: grid; grid-template-columns: 1fr 1fr; align-items: start; gap: 12px; }
+      .control-group + .control-group { padding-top: 0; border-top: 0; }
+      .tool-group { grid-row: span 2; }
+      .control-group.settings { grid-column: 2; grid-row: 1 / span 2; }
+      .settings .group-title { margin-bottom: 6px; }
+      .range-setting { margin-top: 10px; }
+      .check-list { gap: 7px; margin-top: 10px; }
+      .action-stack { grid-column: 1 / -1; grid-template-columns: 1fr 1fr; }
+      .visuals { grid-template-rows: auto auto; }
+      .scene-wrap { height: auto; aspect-ratio: 2 / 1; }
+      #scene { min-height: 0; }
+      .plot-wrap { height: 210px; flex: 0 0 210px; }
+      .statusbar { align-items: flex-start; }
+      .status-right { display: none; }
+    }
+    @media (max-width: 390px) {
+      .brand h1 { font-size: 18px; }
+      .top-meta { max-width: 78px; text-align: right; line-height: 1.25; }
+      .controls { padding: 12px 10px; }
+      .legend { gap: 8px; }
+      .legend-item { font-size: 9px; }
+      .legend-line { width: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <path d="M4 5a11 11 0 0 1 16 0M7 8a7 7 0 0 1 10 0M10 11a3 3 0 0 1 4 0M12 12v8" />
+            <circle cx="12" cy="12" r="1" fill="currentColor" />
+          </svg>
+        </div>
+        <div>
+          <h1>Side-scan sonar</h1>
+          <p>RAY-TRACED PING LAB</p>
+        </div>
+      </div>
+      <div class="top-meta"><span class="live-dot"></span><span>SIMULATION READY</span></div>
+    </header>
+
+    <main class="workspace">
+      <aside class="controls" aria-label="Simulation controls">
+        <section class="control-group tool-group">
+          <h2 class="group-title">SCENE TOOLS</h2>
+          <div class="tool-row" role="group" aria-label="Drawing mode">
+            <button class="tool-button" type="button" data-mode="select" aria-label="Select and move" aria-pressed="true" title="Select and move">
+              <span class="tool-icon select" aria-hidden="true"></span><span>Select</span>
+            </button>
+            <button class="tool-button" type="button" data-mode="rectangle" aria-label="Draw rectangle" aria-pressed="false" title="Draw rectangle">
+              <span class="tool-icon rectangle" aria-hidden="true"></span><span>Rectangle</span>
+            </button>
+            <button class="tool-button" type="button" data-mode="circle" aria-label="Draw ellipse" aria-pressed="false" title="Draw ellipse">
+              <span class="tool-icon ellipse" aria-hidden="true"></span><span>Ellipse</span>
+            </button>
+            <button class="tool-button" type="button" data-mode="line" aria-label="Draw line" aria-pressed="false" title="Draw line">
+              <span class="tool-icon line" aria-hidden="true"></span><span>Line</span>
+            </button>
+            <button class="tool-button" type="button" data-mode="freehand" aria-label="Free draw" aria-pressed="false" title="Free draw">
+              <span class="tool-icon freehand" aria-hidden="true"></span><span>Free draw</span>
+            </button>
+          </div>
+          <button class="delete-button" id="delete-selected" type="button" disabled>
+            <svg class="delete-icon" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2.5 4.5h11M6 4.5V3h4v1.5m2.5 0-.7 9h-7.6l-.7-9M6.5 7v4m3-4v4" />
+            </svg>
+            <span>Delete selected</span>
+            <kbd>Del</kbd>
+          </button>
+        </section>
+
+        <section class="control-group settings">
+          <h2 class="group-title">PING SETTINGS</h2>
+          <div class="range-setting">
+            <div class="range-heading"><label for="beam-width">Max off-nadir angle</label><output class="range-value" id="beam-value" for="beam-width">90°</output></div>
+            <input id="beam-width" type="range" min="0" max="90" value="90" step="1">
+            <div class="range-bounds"><span>0°</span><span>90°</span></div>
+          </div>
+          <div class="range-setting">
+            <div class="range-heading"><label for="ray-count">Ray count</label><output class="range-value" id="ray-value" for="ray-count">121</output></div>
+            <input id="ray-count" type="range" min="31" max="1001" value="121" step="2">
+            <div class="range-bounds"><span>31</span><span>1001</span></div>
+          </div>
+          <div class="check-list">
+            <label class="check-row"><input id="attenuation" type="checkbox" checked><span>Distance attenuation</span></label>
+            <label class="check-row"><input id="equal-spacing" type="checkbox"><span>Equal seafloor spacing</span></label>
+          </div>
+        </section>
+
+        <div class="action-stack">
+          <button class="ping-button" id="send-ping" type="button">Send ping</button>
+          <button class="reset-button" id="reset-scene" type="button">Reset scene</button>
+        </div>
+      </aside>
+
+      <div class="visuals">
+        <section class="panel scene-panel" aria-labelledby="scene-title">
+          <div class="panel-head">
+            <h2 class="panel-title" id="scene-title">CROSS-TRACK SCENE</h2>
+            <span class="panel-detail">SELECTED TARGET IS OUTLINED</span>
+          </div>
+          <div class="scene-wrap"><canvas id="scene" aria-label="Interactive sonar scene editor"></canvas></div>
+        </section>
+
+        <section class="panel plot-panel" aria-labelledby="plot-title">
+          <div class="panel-head">
+            <h2 class="panel-title" id="plot-title">RECEIVED ECHO</h2>
+            <div class="legend" aria-label="Signal legend">
+              <span class="legend-item"><span class="legend-line"></span>ALL OBJECTS</span>
+              <span class="legend-item"><span class="legend-line mint"></span>WITHOUT SELECTED</span>
+            </div>
+          </div>
+          <div class="plot-wrap"><canvas id="plot" aria-label="Received echo amplitude by slant range"></canvas></div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="statusbar" aria-live="polite">
+      <span id="status">Drag to draw a target, then send a ping.</span>
+      <span class="status-right">GEOMETRIC REFLECTION MODEL</span>
+    </footer>
+  </div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const WORLD_WIDTH = 1000;
+      const WORLD_HEIGHT = 500;
+      const MAX_RANGE = 1000;
+      const RANGE_BINS = 240;
+      const SEAFLOOR_Y = 405;
+      const SONAR_ORIGIN = { x: 72, y: 72 };
+      const COLORS = {
+        orange: "#f49a63",
+        mint: "#7fcbba",
+        floor: "#60796b",
+        floorEdge: "#304b41",
+        grid: "#31504a",
+        axis: "#78968b",
+        labels: "#bdcec7",
+        muted: "#9bb3aa"
+      };
+
+      const scene = document.querySelector("#scene");
+      const plot = document.querySelector("#plot");
+      const sceneContext = scene.getContext("2d");
+      const plotContext = plot.getContext("2d");
+      const status = document.querySelector("#status");
+      const beamInput = document.querySelector("#beam-width");
+      const rayInput = document.querySelector("#ray-count");
+      const attenuationInput = document.querySelector("#attenuation");
+      const equalSpacingInput = document.querySelector("#equal-spacing");
+      const deleteButton = document.querySelector("#delete-selected");
+
+      const initialTargets = () => [
+        { kind: "rectangle", x1: 0.29, y1: 0.54, x2: 0.34, y2: 0.68 },
+        { kind: "circle", x1: 0.51, y1: 0.65, x2: 0.58, y2: 0.78 }
+      ];
+
+      let targets = initialTargets();
+      let selectedIndex = -1;
+      let mode = "select";
+      let dragStart = null;
+      let moveOffset = null;
+      let preview = null;
+      let targetMoved = false;
+      let lastSignal = new Array(RANGE_BINS).fill(0);
+      let comparisonSignal = null;
+      let lastRays = [];
+
+      function resizeCanvas(canvas, context) {
+        const bounds = canvas.getBoundingClientRect();
+        const ratio = Math.max(1, window.devicePixelRatio || 1);
+        const width = Math.max(1, Math.round(bounds.width * ratio));
+        const height = Math.max(1, Math.round(bounds.height * ratio));
+        if (canvas.width !== width || canvas.height !== height) {
+          canvas.width = width;
+          canvas.height = height;
+        }
+        context.setTransform(ratio, 0, 0, ratio, 0, 0);
+        return { width: bounds.width, height: bounds.height };
+      }
+
+      function rayEllipseDistance(origin, direction, center, radiusX, radiusY) {
+        radiusX = Math.max(radiusX, 1e-6);
+        radiusY = Math.max(radiusY, 1e-6);
+        const offsetX = origin.x - center.x;
+        const offsetY = origin.y - center.y;
+        const a = (direction.x / radiusX) ** 2 + (direction.y / radiusY) ** 2;
+        const b = 2 * (offsetX * direction.x / radiusX ** 2 + offsetY * direction.y / radiusY ** 2);
+        const c = (offsetX / radiusX) ** 2 + (offsetY / radiusY) ** 2 - 1;
+        const discriminant = b * b - 4 * a * c;
+        if (discriminant < 0) return null;
+        let distance = (-b - Math.sqrt(discriminant)) / (2 * a);
+        if (distance <= 1e-6) distance = (-b + Math.sqrt(discriminant)) / (2 * a);
+        return distance > 1e-6 ? distance : null;
+      }
+
+      function rayRectangleDistance(origin, direction, bounds) {
+        let near = -Infinity;
+        let far = Infinity;
+        for (const [position, velocity, lower, upper] of [
+          [origin.x, direction.x, bounds.x1, bounds.x2],
+          [origin.y, direction.y, bounds.y1, bounds.y2]
+        ]) {
+          if (Math.abs(velocity) < 1e-9) {
+            if (position < lower || position > upper) return null;
+            continue;
+          }
+          const first = (lower - position) / velocity;
+          const second = (upper - position) / velocity;
+          near = Math.max(near, Math.min(first, second));
+          far = Math.min(far, Math.max(first, second));
+          if (far < near) return null;
+        }
+        const distance = near > 1e-6 ? near : far;
+        return distance > 1e-6 ? distance : null;
+      }
+
+      function raySegmentDistance(origin, direction, start, end, radius = 3) {
+        const segmentX = end.x - start.x;
+        const segmentY = end.y - start.y;
+        const length = Math.hypot(segmentX, segmentY);
+        if (length < 1e-9) {
+          return rayEllipseDistance(origin, direction, start, radius, radius);
+        }
+
+        const tangentX = segmentX / length;
+        const tangentY = segmentY / length;
+        const normalX = -tangentY;
+        const normalY = tangentX;
+        const offset = (origin.x - start.x) * normalX + (origin.y - start.y) * normalY;
+        const normalVelocity = direction.x * normalX + direction.y * normalY;
+        let nearest = Infinity;
+
+        if (Math.abs(normalVelocity) > 1e-9) {
+          for (const side of [-1, 1]) {
+            const distance = (side * radius - offset) / normalVelocity;
+            if (distance <= 1e-6) continue;
+            const hitX = origin.x + distance * direction.x;
+            const hitY = origin.y + distance * direction.y;
+            const along = (hitX - start.x) * tangentX + (hitY - start.y) * tangentY;
+            if (along >= 0 && along <= length) nearest = Math.min(nearest, distance);
+          }
+        }
+
+        const startHit = rayEllipseDistance(origin, direction, start, radius, radius);
+        const endHit = rayEllipseDistance(origin, direction, end, radius, radius);
+        if (startHit !== null) nearest = Math.min(nearest, startHit);
+        if (endHit !== null) nearest = Math.min(nearest, endHit);
+        return Number.isFinite(nearest) ? nearest : null;
+      }
+
+      function targetWorldPoints(target) {
+        return target.points.map(point => ({ x: point.x * WORLD_WIDTH, y: point.y * WORLD_HEIGHT }));
+      }
+
+      function targetBounds(target) {
+        const xValues = target.points ? target.points.map(point => point.x) : [target.x1, target.x2];
+        const yValues = target.points ? target.points.map(point => point.y) : [target.y1, target.y2];
+        return {
+          x1: Math.min(...xValues),
+          y1: Math.min(...yValues),
+          x2: Math.max(...xValues),
+          y2: Math.max(...yValues)
+        };
+      }
+
+      function pointSegmentDistance(point, start, end) {
+        const segmentX = end.x - start.x;
+        const segmentY = end.y - start.y;
+        const lengthSquared = segmentX * segmentX + segmentY * segmentY;
+        const fraction = lengthSquared === 0 ? 0 : Math.max(0, Math.min(1, ((point.x - start.x) * segmentX + (point.y - start.y) * segmentY) / lengthSquared));
+        return Math.hypot(point.x - (start.x + fraction * segmentX), point.y - (start.y + fraction * segmentY));
+      }
+
+      function traceRay(angleDegrees, sceneTargets) {
+        const angle = angleDegrees * Math.PI / 180;
+        const direction = { x: Math.cos(angle), y: Math.sin(angle) };
+        const origin = SONAR_ORIGIN;
+        let limit = Math.min(
+          direction.x > 0 ? (WORLD_WIDTH - origin.x) / direction.x : Infinity,
+          direction.y > 0 ? (WORLD_HEIGHT - origin.y) / direction.y : Infinity,
+          direction.y < 0 ? -origin.y / direction.y : Infinity,
+          MAX_RANGE
+        );
+        let nearest = { distance: limit, material: null, reflectivity: 0 };
+
+        const floorDistance = direction.y > 1e-9 ? (SEAFLOOR_Y - origin.y) / direction.y : Infinity;
+        const floorX = origin.x + floorDistance * direction.x;
+        if (floorDistance > 0 && floorDistance < nearest.distance && floorX >= 0 && floorX <= WORLD_WIDTH) {
+          nearest = { distance: floorDistance, material: "seafloor", reflectivity: 0.72 };
+        }
+
+        for (const target of sceneTargets) {
+          const normalizedBounds = targetBounds(target);
+          const bounds = {
+            x1: normalizedBounds.x1 * WORLD_WIDTH,
+            x2: normalizedBounds.x2 * WORLD_WIDTH,
+            y1: normalizedBounds.y1 * WORLD_HEIGHT,
+            y2: normalizedBounds.y2 * WORLD_HEIGHT
+          };
+          let distance;
+          let reflectivity;
+          if (target.kind === "circle") {
+            distance = rayEllipseDistance(
+              origin,
+              direction,
+              { x: (bounds.x1 + bounds.x2) / 2, y: (bounds.y1 + bounds.y2) / 2 },
+              (bounds.x2 - bounds.x1) / 2,
+              (bounds.y2 - bounds.y1) / 2
+            );
+            reflectivity = 0.78;
+          } else if (target.kind === "rectangle") {
+            distance = rayRectangleDistance(origin, direction, bounds);
+            reflectivity = 0.92;
+          } else {
+            const points = targetWorldPoints(target);
+            distance = null;
+            for (let index = 0; index < points.length - 1; index++) {
+              const segmentDistance = raySegmentDistance(origin, direction, points[index], points[index + 1]);
+              if (segmentDistance !== null && (distance === null || segmentDistance < distance)) distance = segmentDistance;
+            }
+            reflectivity = 0.86;
+          }
+          if (distance !== null && distance < nearest.distance) {
+            nearest = { distance, material: target.kind, reflectivity };
+          }
+        }
+
+        return {
+          endpoint: {
+            x: origin.x + nearest.distance * direction.x,
+            y: origin.y + nearest.distance * direction.y
+          },
+          distance: nearest.distance,
+          material: nearest.material,
+          reflectivity: nearest.reflectivity
+        };
+      }
+
+      function simulatePing(sceneTargets, options) {
+        const signal = new Array(RANGE_BINS).fill(0);
+        const rays = [];
+        const depth = SEAFLOOR_Y - SONAR_ORIGIN.y;
+        let floorDistanceLimit = Math.min(MAX_RANGE, Math.hypot(WORLD_WIDTH - SONAR_ORIGIN.x, depth));
+        const endAngle = Math.max(90 - options.beamWidth, 0) * Math.PI / 180;
+        if (endAngle > 1e-9) floorDistanceLimit = Math.min(floorDistanceLimit, depth / Math.sin(endAngle));
+        const floorXLimit = SONAR_ORIGIN.x + Math.sqrt(Math.max(floorDistanceLimit ** 2 - depth ** 2, 0));
+
+        for (let rayIndex = 0; rayIndex < options.rayCount; rayIndex++) {
+          const fraction = rayIndex / Math.max(options.rayCount - 1, 1);
+          let angle;
+          if (options.uniformSeafloorSpacing) {
+            const floorX = SONAR_ORIGIN.x + fraction * (floorXLimit - SONAR_ORIGIN.x);
+            angle = Math.atan2(depth, Math.max(floorX - SONAR_ORIGIN.x, 1e-9)) * 180 / Math.PI;
+          } else {
+            angle = 90 - fraction * options.beamWidth;
+          }
+
+          const hit = traceRay(angle, sceneTargets);
+          rays.push({ endpoint: hit.endpoint, material: hit.material });
+          if (!hit.material) continue;
+          const binIndex = Math.round(hit.distance / MAX_RANGE * (RANGE_BINS - 1));
+          const attenuation = options.distanceAttenuation ? Math.exp(-hit.distance / 1500) : 1;
+          const echo = hit.reflectivity * attenuation / options.rayCount;
+          for (const [offset, weight] of [[-1, 0.25], [0, 0.5], [1, 0.25]]) {
+            const index = binIndex + offset;
+            if (index >= 0 && index < RANGE_BINS) signal[index] += echo * weight;
+          }
+        }
+        return { signal, rays };
+      }
+
+      function pingOptions() {
+        return {
+          beamWidth: Number(beamInput.value),
+          rayCount: Number(rayInput.value),
+          distanceAttenuation: attenuationInput.checked,
+          uniformSeafloorSpacing: equalSpacingInput.checked
+        };
+      }
+
+      function sendPing() {
+        const options = pingOptions();
+        const result = simulatePing(targets, options);
+        lastSignal = result.signal;
+        lastRays = result.rays;
+        comparisonSignal = null;
+        if (selectedIndex >= 0 && selectedIndex < targets.length) {
+          const comparisonTargets = targets.filter((_target, index) => index !== selectedIndex);
+          comparisonSignal = simulatePing(comparisonTargets, options).signal;
+        }
+
+        const signals = comparisonSignal ? [lastSignal, comparisonSignal] : [lastSignal];
+        const peak = Math.max(...signals.map(signal => Math.max(...signal)));
+        if (peak > 0) {
+          for (const signal of signals) {
+            for (let index = 0; index < signal.length; index++) signal[index] /= peak;
+          }
+        }
+        const returnBins = lastSignal.filter(value => value > 0).length;
+        status.textContent = `Ping complete · ${options.rayCount} rays · ${returnBins} range bins with echoes`;
+        drawScene();
+        drawPlot();
+      }
+
+      function clearPing(message) {
+        lastSignal = new Array(RANGE_BINS).fill(0);
+        comparisonSignal = null;
+        lastRays = [];
+        status.textContent = message;
+        drawScene();
+        drawPlot();
+      }
+
+      function drawScene() {
+        const size = resizeCanvas(scene, sceneContext);
+        const ctx = sceneContext;
+        const sx = size.width / WORLD_WIDTH;
+        const sy = size.height / WORLD_HEIGHT;
+        ctx.clearRect(0, 0, size.width, size.height);
+        ctx.fillStyle = "#dcebe8";
+        ctx.fillRect(0, 0, size.width, size.height);
+
+        const floorY = SEAFLOOR_Y * sy;
+        ctx.save();
+        ctx.strokeStyle = "#c4d9d4";
+        ctx.lineWidth = 1;
+        ctx.setLineDash([2, 5]);
+        for (const fraction of [0.25, 0.5, 0.75]) {
+          ctx.beginPath();
+          ctx.moveTo(size.width * fraction, 0);
+          ctx.lineTo(size.width * fraction, floorY);
+          ctx.stroke();
+        }
+        ctx.restore();
+        ctx.fillStyle = COLORS.floor;
+        ctx.fillRect(0, floorY, size.width, size.height - floorY);
+        ctx.strokeStyle = COLORS.floorEdge;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, floorY);
+        ctx.lineTo(size.width, floorY);
+        ctx.stroke();
+        ctx.fillStyle = "#edf2e8";
+        ctx.font = "700 9px Aptos, sans-serif";
+        ctx.fillText("SEAFLOOR", 12, Math.min(floorY + 16, size.height - 5));
+
+        const ox = SONAR_ORIGIN.x * sx;
+        const oy = SONAR_ORIGIN.y * sy;
+        for (const ray of lastRays) {
+          const ex = ray.endpoint.x * sx;
+          const ey = ray.endpoint.y * sy;
+          ctx.strokeStyle = ray.material ? "#d66d43" : "#89a8a0";
+          ctx.lineWidth = 1;
+          ctx.setLineDash([]);
+          ctx.beginPath();
+          ctx.moveTo(ox, oy);
+          ctx.lineTo(ex, ey);
+          ctx.stroke();
+          if (ray.material === "seafloor") {
+            ctx.strokeStyle = "#f3bd8f";
+            ctx.setLineDash([3, 3]);
+            ctx.beginPath();
+            ctx.moveTo(ex, ey);
+            ctx.lineTo(ox, oy);
+            ctx.stroke();
+            ctx.setLineDash([]);
+          }
+          if (ray.material) {
+            ctx.fillStyle = "#f2a06c";
+            ctx.beginPath();
+            ctx.arc(ex, ey, 2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        ctx.fillStyle = "#163c37";
+        ctx.beginPath();
+        ctx.moveTo(ox - 8, oy - 5);
+        ctx.lineTo(ox + 8, oy);
+        ctx.lineTo(ox - 8, oy + 5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = "#31574f";
+        ctx.font = "700 9px Aptos, sans-serif";
+        ctx.fillText("SONAR", ox + 12, oy - 10);
+
+        targets.forEach((target, index) => {
+          if (target.points) {
+            ctx.strokeStyle = index === selectedIndex ? "#e05f38" : target.kind === "line" ? "#416d58" : "#b05a38";
+            ctx.lineWidth = index === selectedIndex ? 4 : 3;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            ctx.beginPath();
+            target.points.forEach((point, pointIndex) => {
+              const x = point.x * size.width;
+              const y = point.y * size.height;
+              if (pointIndex === 0) ctx.moveTo(x, y);
+              else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+            return;
+          }
+
+          const x1 = Math.min(target.x1, target.x2) * size.width;
+          const x2 = Math.max(target.x1, target.x2) * size.width;
+          const y1 = Math.min(target.y1, target.y2) * size.height;
+          const y2 = Math.max(target.y1, target.y2) * size.height;
+          ctx.fillStyle = target.kind === "rectangle" ? "#e6a16d" : "#7b9f82";
+          ctx.strokeStyle = index === selectedIndex ? "#e05f38" : "#344d47";
+          ctx.lineWidth = index === selectedIndex ? 2 : 1;
+          ctx.beginPath();
+          if (target.kind === "circle") {
+            ctx.ellipse((x1 + x2) / 2, (y1 + y2) / 2, Math.max((x2 - x1) / 2, 1), Math.max((y2 - y1) / 2, 1), 0, 0, Math.PI * 2);
+          } else {
+            ctx.rect(x1, y1, x2 - x1, y2 - y1);
+          }
+          ctx.fill();
+          ctx.stroke();
+        });
+
+        if (preview) {
+          ctx.strokeStyle = "#d66d43";
+          ctx.lineWidth = 2;
+          ctx.setLineDash([4, 3]);
+          ctx.beginPath();
+          if (preview.points) {
+            preview.points.forEach((point, pointIndex) => {
+              const x = point.x * size.width;
+              const y = point.y * size.height;
+              if (pointIndex === 0) ctx.moveTo(x, y);
+              else ctx.lineTo(x, y);
+            });
+          } else if (mode === "circle") {
+            ctx.ellipse((preview.x1 + preview.x2) * size.width / 2, (preview.y1 + preview.y2) * size.height / 2, Math.max(Math.abs(preview.x2 - preview.x1) * size.width / 2, 1), Math.max(Math.abs(preview.y2 - preview.y1) * size.height / 2, 1), 0, 0, Math.PI * 2);
+          } else if (mode === "line") {
+            ctx.moveTo(preview.x1 * size.width, preview.y1 * size.height);
+            ctx.lineTo(preview.x2 * size.width, preview.y2 * size.height);
+          } else {
+            ctx.rect(Math.min(preview.x1, preview.x2) * size.width, Math.min(preview.y1, preview.y2) * size.height, Math.abs(preview.x2 - preview.x1) * size.width, Math.abs(preview.y2 - preview.y1) * size.height);
+          }
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+      }
+
+      function drawPlot() {
+        const size = resizeCanvas(plot, plotContext);
+        const ctx = plotContext;
+        const width = size.width;
+        const height = size.height;
+        ctx.clearRect(0, 0, width, height);
+        ctx.fillStyle = "#18332f";
+        ctx.fillRect(0, 0, width, height);
+        const left = 48;
+        const right = width - 18;
+        const top = 14;
+        const bottom = height - 31;
+        if (right <= left || bottom <= top) return;
+
+        ctx.font = "10px Aptos, sans-serif";
+        ctx.textBaseline = "middle";
+        for (const [fraction, label] of [[0, "0"], [0.5, "0.5"], [1, "1.0"]]) {
+          const y = bottom - fraction * (bottom - top);
+          ctx.strokeStyle = COLORS.grid;
+          ctx.lineWidth = 1;
+          ctx.setLineDash([2, 4]);
+          ctx.beginPath();
+          ctx.moveTo(left, y);
+          ctx.lineTo(right, y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle = COLORS.labels;
+          ctx.textAlign = "right";
+          ctx.fillText(label, left - 9, y);
+        }
+        ctx.strokeStyle = COLORS.axis;
+        ctx.beginPath();
+        ctx.moveTo(left, top);
+        ctx.lineTo(left, bottom);
+        ctx.lineTo(right, bottom);
+        ctx.stroke();
+        for (const distance of [0, 25, 50, 75, 100]) {
+          const x = left + distance / 100 * (right - left);
+          ctx.beginPath();
+          ctx.moveTo(x, bottom);
+          ctx.lineTo(x, bottom + 4);
+          ctx.stroke();
+          ctx.fillStyle = COLORS.labels;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "top";
+          ctx.fillText(String(distance), x, bottom + 7);
+        }
+        ctx.fillStyle = COLORS.labels;
+        ctx.font = "9px Aptos, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "bottom";
+        ctx.fillText("SLANT RANGE (m)", (left + right) / 2, height - 2);
+
+        let hasCurve = false;
+        for (const [signal, color] of [[lastSignal, COLORS.orange], [comparisonSignal, COLORS.mint]]) {
+          if (!signal || !signal.some(value => value > 0)) continue;
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          signal.forEach((value, index) => {
+            const x = left + index / Math.max(signal.length - 1, 1) * (right - left);
+            const y = bottom - value * (bottom - top);
+            if (index === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          });
+          ctx.stroke();
+          hasCurve = true;
+        }
+        if (!hasCurve) {
+          ctx.fillStyle = COLORS.muted;
+          ctx.font = "12px Aptos, sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("Send a ping to view the received signal", (left + right) / 2, (top + bottom) / 2);
+        }
+      }
+
+      function scenePoint(event) {
+        const bounds = scene.getBoundingClientRect();
+        return {
+          x: Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width)),
+          y: Math.max(0, Math.min(1, (event.clientY - bounds.top) / bounds.height))
+        };
+      }
+
+      function targetAt(point) {
+        for (let index = targets.length - 1; index >= 0; index--) {
+          const target = targets[index];
+          if (target.points) {
+            const worldPoint = { x: point.x * WORLD_WIDTH, y: point.y * WORLD_HEIGHT };
+            const worldPoints = targetWorldPoints(target);
+            const tolerance = 9 * WORLD_WIDTH / scene.getBoundingClientRect().width;
+            for (let pointIndex = 0; pointIndex < worldPoints.length - 1; pointIndex++) {
+              if (pointSegmentDistance(worldPoint, worldPoints[pointIndex], worldPoints[pointIndex + 1]) <= tolerance) return index;
+            }
+            continue;
+          }
+          if (point.x >= Math.min(target.x1, target.x2) && point.x <= Math.max(target.x1, target.x2) &&
+              point.y >= Math.min(target.y1, target.y2) && point.y <= Math.max(target.y1, target.y2)) return index;
+        }
+        return -1;
+      }
+
+      function updateDeleteButton() {
+        deleteButton.disabled = selectedIndex < 0 || selectedIndex >= targets.length;
+      }
+
+      function setMode(nextMode) {
+        mode = nextMode;
+        document.querySelectorAll("[data-mode]").forEach(button => {
+          button.setAttribute("aria-pressed", String(button.dataset.mode === mode));
+        });
+        scene.style.cursor = mode === "select" ? "default" : "crosshair";
+      }
+
+      function deleteSelected() {
+        if (selectedIndex < 0 || selectedIndex >= targets.length) return;
+        targets.splice(selectedIndex, 1);
+        selectedIndex = -1;
+        updateDeleteButton();
+        clearPing("Target removed. Send a ping to update the return.");
+      }
+
+      document.querySelectorAll("[data-mode]").forEach(button => {
+        button.addEventListener("click", () => setMode(button.dataset.mode));
+      });
+      deleteButton.addEventListener("click", deleteSelected);
+      beamInput.addEventListener("input", () => {
+        document.querySelector("#beam-value").value = `${beamInput.value}°`;
+      });
+      rayInput.addEventListener("input", () => {
+        document.querySelector("#ray-value").value = rayInput.value;
+      });
+      document.querySelector("#send-ping").addEventListener("click", sendPing);
+      document.querySelector("#reset-scene").addEventListener("click", () => {
+        targets = initialTargets();
+        selectedIndex = -1;
+        updateDeleteButton();
+        clearPing("Scene reset. Drag to draw a target, then send a ping.");
+      });
+
+      scene.addEventListener("pointerdown", event => {
+        if (event.button !== 0) return;
+        const point = scenePoint(event);
+        dragStart = point;
+        targetMoved = false;
+        scene.setPointerCapture(event.pointerId);
+        if (mode === "select") {
+          const previousSelection = selectedIndex;
+          selectedIndex = targetAt(point);
+          moveOffset = null;
+          if (selectedIndex >= 0) {
+            const target = targets[selectedIndex];
+            const bounds = targetBounds(target);
+            moveOffset = { x: (bounds.x1 + bounds.x2) / 2 - point.x, y: (bounds.y1 + bounds.y2) / 2 - point.y };
+          }
+          updateDeleteButton();
+          if (selectedIndex !== previousSelection) {
+            comparisonSignal = null;
+            drawPlot();
+          }
+          drawScene();
+        } else {
+          selectedIndex = -1;
+          updateDeleteButton();
+          comparisonSignal = null;
+          if (mode === "freehand") preview = { points: [point] };
+          drawPlot();
+        }
+      });
+
+      scene.addEventListener("pointermove", event => {
+        if (!dragStart) return;
+        const point = scenePoint(event);
+        if (mode === "select" && selectedIndex >= 0 && moveOffset) {
+          const target = targets[selectedIndex];
+          const bounds = targetBounds(target);
+          const targetWidth = bounds.x2 - bounds.x1;
+          const targetHeight = bounds.y2 - bounds.y1;
+          const centerX = Math.max(targetWidth / 2, Math.min(1 - targetWidth / 2, point.x + moveOffset.x));
+          const centerY = Math.max(targetHeight / 2, Math.min(1 - targetHeight / 2, point.y + moveOffset.y));
+          const deltaX = centerX - (bounds.x1 + bounds.x2) / 2;
+          const deltaY = centerY - (bounds.y1 + bounds.y2) / 2;
+          if (target.points) {
+            target.points = target.points.map(pathPoint => ({
+              x: pathPoint.x + deltaX,
+              y: pathPoint.y + deltaY
+            }));
+          } else {
+            target.x1 += deltaX;
+            target.x2 += deltaX;
+            target.y1 += deltaY;
+            target.y2 += deltaY;
+          }
+          if (!targetMoved) {
+            targetMoved = true;
+            clearPing("Scene changed. Send a ping to update both returns.");
+          } else {
+            drawScene();
+          }
+        } else if (mode !== "select") {
+          if (mode === "freehand") {
+            const previous = preview.points.at(-1);
+            const size = scene.getBoundingClientRect();
+            if (Math.hypot((point.x - previous.x) * size.width, (point.y - previous.y) * size.height) >= 2.5) preview.points.push(point);
+          } else {
+            preview = { x1: dragStart.x, y1: dragStart.y, x2: point.x, y2: point.y };
+          }
+          drawScene();
+        }
+      });
+
+      function finishPointer(event) {
+        if (!dragStart) return;
+        const point = scenePoint(event);
+        if (mode !== "select") {
+          let createdTarget = null;
+          if (mode === "freehand") {
+            if (preview.points.length > 1) {
+              const lastPoint = preview.points.at(-1);
+              if (Math.hypot(point.x - lastPoint.x, point.y - lastPoint.y) > 1e-4) preview.points.push(point);
+              createdTarget = { kind: "freehand", points: preview.points };
+            }
+          } else if (mode === "line") {
+            if (Math.hypot(point.x - dragStart.x, point.y - dragStart.y) > 0.012) {
+              createdTarget = { kind: "line", points: [dragStart, point] };
+            }
+          } else {
+            const x1 = Math.min(dragStart.x, point.x);
+            const y1 = Math.min(dragStart.y, point.y);
+            const x2 = Math.max(dragStart.x, point.x);
+            const y2 = Math.max(dragStart.y, point.y);
+            if (x2 - x1 > 0.012 && y2 - y1 > 0.012) createdTarget = { kind: mode, x1, y1, x2, y2 };
+          }
+          if (createdTarget) {
+            targets.push(createdTarget);
+            selectedIndex = targets.length - 1;
+            updateDeleteButton();
+            clearPing("Target added. Send a ping to update the return.");
+          }
+        }
+        dragStart = null;
+        moveOffset = null;
+        preview = null;
+        targetMoved = false;
+        drawScene();
+      }
+      scene.addEventListener("pointerup", finishPointer);
+      scene.addEventListener("pointercancel", finishPointer);
+
+      document.addEventListener("keydown", event => {
+        if ((event.key === "Delete" || event.key === "Backspace") && !["INPUT", "BUTTON"].includes(document.activeElement.tagName)) {
+          deleteSelected();
+        }
+      });
+      window.addEventListener("resize", () => {
+        drawScene();
+        drawPlot();
+      });
+
+      drawScene();
+      drawPlot();
+    })();
+  </script>
+</body>
+</html>
