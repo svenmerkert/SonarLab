@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="de">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#e9eee8">
-  <title>Side-scan Sonar Lab</title>
+  <title>Side-Scan-Sonar-Labor</title>
   <style>
     :root {
       color-scheme: light;
@@ -295,92 +295,92 @@
           </svg>
         </div>
         <div>
-          <h1>Side-scan sonar</h1>
-          <p>RAY-TRACED PING LAB</p>
+          <h1>Side-Scan-Sonar</h1>
+          <p>PING-LABOR MIT STRAHLVERFOLGUNG</p>
         </div>
       </div>
-      <div class="top-meta"><span class="live-dot"></span><span>SIMULATION READY</span></div>
+      <div class="top-meta"><span class="live-dot"></span><span>SIMULATION BEREIT</span></div>
     </header>
 
     <main class="workspace">
-      <aside class="controls" aria-label="Simulation controls">
+      <aside class="controls" aria-label="Simulationseinstellungen">
         <section class="control-group tool-group">
-          <h2 class="group-title">SCENE TOOLS</h2>
-          <div class="tool-row" role="group" aria-label="Drawing mode">
-            <button class="tool-button" type="button" data-mode="select" aria-label="Select and move" aria-pressed="true" title="Select and move">
-              <span class="tool-icon select" aria-hidden="true"></span><span>Select</span>
+          <h2 class="group-title">SZENENWERKZEUGE</h2>
+          <div class="tool-row" role="group" aria-label="Zeichenmodus">
+            <button class="tool-button" type="button" data-mode="select" aria-label="Auswählen und verschieben" aria-pressed="true" title="Auswählen und verschieben">
+              <span class="tool-icon select" aria-hidden="true"></span><span>Auswählen</span>
             </button>
-            <button class="tool-button" type="button" data-mode="rectangle" aria-label="Draw rectangle" aria-pressed="false" title="Draw rectangle">
-              <span class="tool-icon rectangle" aria-hidden="true"></span><span>Rectangle</span>
+            <button class="tool-button" type="button" data-mode="rectangle" aria-label="Rechteck zeichnen" aria-pressed="false" title="Rechteck zeichnen">
+              <span class="tool-icon rectangle" aria-hidden="true"></span><span>Rechteck</span>
             </button>
-            <button class="tool-button" type="button" data-mode="circle" aria-label="Draw ellipse" aria-pressed="false" title="Draw ellipse">
+            <button class="tool-button" type="button" data-mode="circle" aria-label="Ellipse zeichnen" aria-pressed="false" title="Ellipse zeichnen">
               <span class="tool-icon ellipse" aria-hidden="true"></span><span>Ellipse</span>
             </button>
-            <button class="tool-button" type="button" data-mode="line" aria-label="Draw line" aria-pressed="false" title="Draw line">
-              <span class="tool-icon line" aria-hidden="true"></span><span>Line</span>
+            <button class="tool-button" type="button" data-mode="line" aria-label="Linie zeichnen" aria-pressed="false" title="Linie zeichnen">
+              <span class="tool-icon line" aria-hidden="true"></span><span>Linie</span>
             </button>
-            <button class="tool-button" type="button" data-mode="freehand" aria-label="Free draw" aria-pressed="false" title="Free draw">
-              <span class="tool-icon freehand" aria-hidden="true"></span><span>Free draw</span>
+            <button class="tool-button" type="button" data-mode="freehand" aria-label="Freihand zeichnen" aria-pressed="false" title="Freihand zeichnen">
+              <span class="tool-icon freehand" aria-hidden="true"></span><span>Freihand</span>
             </button>
           </div>
           <button class="delete-button" id="delete-selected" type="button" disabled>
             <svg class="delete-icon" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M2.5 4.5h11M6 4.5V3h4v1.5m2.5 0-.7 9h-7.6l-.7-9M6.5 7v4m3-4v4" />
             </svg>
-            <span>Delete selected</span>
+            <span>Ausgewähltes löschen</span>
             <kbd>Del</kbd>
           </button>
         </section>
 
         <section class="control-group settings">
-          <h2 class="group-title">PING SETTINGS</h2>
+          <h2 class="group-title">PING-EINSTELLUNGEN</h2>
           <div class="range-setting">
-            <div class="range-heading"><label for="beam-width">Max off-nadir angle</label><output class="range-value" id="beam-value" for="beam-width">90°</output></div>
+            <div class="range-heading"><label for="beam-width">Max. Winkel zur Senkrechten</label><output class="range-value" id="beam-value" for="beam-width">90°</output></div>
             <input id="beam-width" type="range" min="0" max="90" value="90" step="1">
             <div class="range-bounds"><span>0°</span><span>90°</span></div>
           </div>
           <div class="range-setting">
-            <div class="range-heading"><label for="ray-count">Ray count</label><output class="range-value" id="ray-value" for="ray-count">121</output></div>
+            <div class="range-heading"><label for="ray-count">Anzahl der Strahlen</label><output class="range-value" id="ray-value" for="ray-count">121</output></div>
             <input id="ray-count" type="range" min="31" max="1001" value="121" step="2">
             <div class="range-bounds"><span>31</span><span>1001</span></div>
           </div>
           <div class="check-list">
-            <label class="check-row"><input id="attenuation" type="checkbox" checked><span>Distance attenuation</span></label>
-            <label class="check-row"><input id="equal-spacing" type="checkbox"><span>Equal seafloor spacing</span></label>
+            <label class="check-row"><input id="attenuation" type="checkbox" checked><span>Entfernungsdämpfung</span></label>
+            <label class="check-row"><input id="equal-spacing" type="checkbox"><span>Gleichmäßige Abstände am Meeresboden</span></label>
           </div>
         </section>
 
         <div class="action-stack">
-          <button class="ping-button" id="send-ping" type="button">Send ping</button>
-          <button class="reset-button" id="reset-scene" type="button">Reset scene</button>
+          <button class="ping-button" id="send-ping" type="button">Ping senden</button>
+          <button class="reset-button" id="reset-scene" type="button">Szene zurücksetzen</button>
         </div>
       </aside>
 
       <div class="visuals">
         <section class="panel scene-panel" aria-labelledby="scene-title">
           <div class="panel-head">
-            <h2 class="panel-title" id="scene-title">CROSS-TRACK SCENE</h2>
-            <span class="panel-detail">SELECTED TARGET IS OUTLINED</span>
+            <h2 class="panel-title" id="scene-title">QUERSCHNITTSANSICHT</h2>
+            <span class="panel-detail">AUSGEWÄHLTES OBJEKT MARKIERT</span>
           </div>
-          <div class="scene-wrap"><canvas id="scene" aria-label="Interactive sonar scene editor"></canvas></div>
+          <div class="scene-wrap"><canvas id="scene" aria-label="Interaktiver Sonar-Szeneneditor"></canvas></div>
         </section>
 
         <section class="panel plot-panel" aria-labelledby="plot-title">
           <div class="panel-head">
-            <h2 class="panel-title" id="plot-title">RECEIVED ECHO</h2>
-            <div class="legend" aria-label="Signal legend">
-              <span class="legend-item"><span class="legend-line"></span>ALL OBJECTS</span>
-              <span class="legend-item"><span class="legend-line mint"></span>WITHOUT SELECTED</span>
+            <h2 class="panel-title" id="plot-title">EMPFANGENES ECHO</h2>
+            <div class="legend" aria-label="Signallegende">
+              <span class="legend-item"><span class="legend-line"></span>ALLE OBJEKTE</span>
+              <span class="legend-item"><span class="legend-line mint"></span>OHNE AUSGEWÄHLTES OBJEKT</span>
             </div>
           </div>
-          <div class="plot-wrap"><canvas id="plot" aria-label="Received echo amplitude by slant range"></canvas></div>
+          <div class="plot-wrap"><canvas id="plot" aria-label="Echoamplitude über der Schrägentfernung"></canvas></div>
         </section>
       </div>
     </main>
 
     <footer class="statusbar" aria-live="polite">
-      <span id="status">Drag to draw a target, then send a ping.</span>
-      <span class="status-right">GEOMETRIC REFLECTION MODEL</span>
+      <span id="status">Ziehe, um ein Objekt zu zeichnen, und sende anschließend einen Ping.</span>
+      <span class="status-right">GEOMETRISCHES REFLEXIONSMODELL</span>
     </footer>
   </div>
 
@@ -664,7 +664,7 @@
           }
         }
         const returnBins = lastSignal.filter(value => value > 0).length;
-        status.textContent = `Ping complete · ${options.rayCount} rays · ${returnBins} range bins with echoes`;
+        status.textContent = `Ping abgeschlossen · ${options.rayCount} Strahlen · ${returnBins} Entfernungsbereiche mit Echos`;
         drawScene();
         drawPlot();
       }
@@ -709,7 +709,7 @@
         ctx.stroke();
         ctx.fillStyle = "#edf2e8";
         ctx.font = "700 9px Aptos, sans-serif";
-        ctx.fillText("SEAFLOOR", 12, Math.min(floorY + 16, size.height - 5));
+        ctx.fillText("MEERESBODEN", 12, Math.min(floorY + 16, size.height - 5));
 
         const ox = SONAR_ORIGIN.x * sx;
         const oy = SONAR_ORIGIN.y * sy;
@@ -861,7 +861,7 @@
         ctx.font = "9px Aptos, sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "bottom";
-        ctx.fillText("SLANT RANGE (m)", (left + right) / 2, height - 2);
+        ctx.fillText("SCHRÄGENTFERNUNG (m)", (left + right) / 2, height - 2);
 
         let hasCurve = false;
         for (const [signal, color] of [[lastSignal, COLORS.orange], [comparisonSignal, COLORS.mint]]) {
@@ -883,7 +883,7 @@
           ctx.font = "12px Aptos, sans-serif";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
-          ctx.fillText("Send a ping to view the received signal", (left + right) / 2, (top + bottom) / 2);
+          ctx.fillText("Ping senden, um das Empfangssignal anzuzeigen", (left + right) / 2, (top + bottom) / 2);
         }
       }
 
@@ -930,7 +930,7 @@
         targets.splice(selectedIndex, 1);
         selectedIndex = -1;
         updateDeleteButton();
-        clearPing("Target removed. Send a ping to update the return.");
+        clearPing("Objekt entfernt. Sende einen Ping, um das Echo zu aktualisieren.");
       }
 
       document.querySelectorAll("[data-mode]").forEach(button => {
@@ -948,7 +948,7 @@
         targets = initialTargets();
         selectedIndex = -1;
         updateDeleteButton();
-        clearPing("Scene reset. Drag to draw a target, then send a ping.");
+        clearPing("Szene zurückgesetzt. Ziehe, um ein Objekt zu zeichnen, und sende anschließend einen Ping.");
       });
 
       scene.addEventListener("pointerdown", event => {
@@ -1006,7 +1006,7 @@
           }
           if (!targetMoved) {
             targetMoved = true;
-            clearPing("Scene changed. Send a ping to update both returns.");
+            clearPing("Szene geändert. Sende einen Ping, um beide Echos zu aktualisieren.");
           } else {
             drawScene();
           }
@@ -1048,7 +1048,7 @@
             targets.push(createdTarget);
             selectedIndex = targets.length - 1;
             updateDeleteButton();
-            clearPing("Target added. Send a ping to update the return.");
+            clearPing("Objekt hinzugefügt. Sende einen Ping, um das Echo zu aktualisieren.");
           }
         }
         dragStart = null;
