@@ -42,7 +42,7 @@
 
     .app-shell {
       width: min(1540px, 100%);
-      height: 100vh;
+      height: auto;
       min-height: 680px;
       margin: 0 auto;
       padding: 22px clamp(14px, 2.3vw, 34px) 16px;
@@ -97,7 +97,7 @@
     .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #5b9b78; box-shadow: 0 0 0 4px rgb(91 155 120 / 15%); }
 
     .workspace {
-      flex: 1;
+      flex: 0 0 auto;
       min-height: 0;
       display: grid;
       grid-template-columns: 248px minmax(0, 1fr);
@@ -184,7 +184,7 @@
     .check-row { display: flex; align-items: center; gap: 9px; color: #40564d; font-size: 11px; font-weight: 650; cursor: pointer; }
     .check-row input { width: 15px; height: 15px; margin: 0; accent-color: #28735f; }
 
-    .action-stack { display: grid; gap: 7px; margin-top: auto; }
+    .action-stack { display: grid; gap: 7px; }
     .ping-button, .reset-button {
       min-height: 40px;
       border: 0;
@@ -201,7 +201,7 @@
     .reset-button:hover { background: #edf3ee; }
     button:focus-visible, input:focus-visible { outline: 3px solid #e1a16e; outline-offset: 2px; }
 
-    .visuals { min-width: 0; min-height: 0; display: grid; grid-template-rows: minmax(0, 1.25fr) minmax(210px, .75fr); gap: 14px; }
+    .visuals { min-width: 0; min-height: 0; display: grid; grid-template-rows: 320px 240px 1100px; gap: 14px; }
     .panel {
       min-width: 0;
       min-height: 0;
@@ -225,6 +225,16 @@
     .legend-line.mint { border-color: var(--mint); }
     .plot-wrap { flex: 1; min-height: 0; overflow: hidden; border-radius: 3px; background: var(--deep); }
     #plot { width: 100%; height: 100%; min-height: 0; }
+    .history-head { flex-wrap: wrap; }
+    .history-panel { min-height: 1100px; }
+    .history-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 7px; }
+    .history-controls label { color: #586c62; font-size: 10px; font-weight: 700; }
+    #history-count { width: 62px; min-height: 30px; padding: 3px 5px; border: 1px solid var(--line); border-radius: 4px; color: var(--ink); background: #f8faf8; font-size: 11px; }
+    .history-add-button { min-height: 30px; padding: 4px 8px; border: 1px solid #78a695; border-radius: 4px; color: #214a40; background: #e6f0eb; cursor: pointer; font-size: 10px; font-weight: 700; }
+    .history-add-button:hover:not(:disabled) { background: #d7e9e1; }
+    .history-add-button:disabled { border-color: var(--line); color: #9da8a2; background: #f7f8f6; cursor: not-allowed; }
+    .history-wrap { flex: 1; min-height: 0; overflow: hidden; border-radius: 3px; background: var(--deep); }
+    #history { width: 100%; height: 100%; min-height: 0; }
 
     .statusbar {
       min-height: 24px;
@@ -241,12 +251,13 @@
 
     @media (min-height: 900px) and (min-width: 900px) {
       .app-shell { padding-top: 28px; gap: 22px; }
-      .visuals { grid-template-rows: minmax(390px, 1fr) minmax(260px, .72fr); }
+      .visuals { grid-template-rows: 320px 240px 1100px; }
     }
     @media (max-width: 850px) {
       .workspace { grid-template-columns: 210px minmax(0, 1fr); gap: 10px; }
       .controls { padding: 14px 12px; }
-      .visuals { grid-template-rows: minmax(250px, 1fr) minmax(205px, .8fr); }
+      .app-shell { height: auto; min-height: 100vh; }
+      .visuals { grid-template-rows: 300px 220px 1100px; }
       .panel { padding: 10px; }
       .panel-detail { display: none; }
     }
@@ -267,10 +278,11 @@
       .range-setting { margin-top: 10px; }
       .check-list { gap: 7px; margin-top: 10px; }
       .action-stack { grid-column: 1 / -1; grid-template-columns: 1fr 1fr; }
-      .visuals { grid-template-rows: auto auto; }
+      .visuals { grid-template-rows: auto auto auto; }
       .scene-wrap { height: auto; aspect-ratio: 2 / 1; }
       #scene { min-height: 0; }
       .plot-wrap { height: 210px; flex: 0 0 210px; }
+      .history-wrap { height: 300px; flex: 0 0 300px; }
       .statusbar { align-items: flex-start; }
       .status-right { display: none; }
     }
@@ -380,6 +392,19 @@
           </div>
           <div class="plot-wrap"><canvas id="plot" aria-label="Echoamplitude in Dezibel über der Schrägentfernung, logarithmische Skala"></canvas></div>
         </section>
+
+        <section class="panel history-panel" aria-labelledby="history-title">
+          <div class="panel-head history-head">
+            <h2 class="panel-title" id="history-title">ECHO-INTENSITÄTSVERLAUF</h2>
+            <div class="history-controls">
+              <span class="panel-detail">NEUESTE MESSUNG OBEN</span>
+              <label for="history-count">Wiederholungen</label>
+              <input id="history-count" type="number" min="1" max="1000" step="1" value="1" required>
+              <button class="history-add-button" id="add-history" type="button" disabled>Echo hinzufügen</button>
+            </div>
+          </div>
+          <div class="history-wrap"><canvas id="history" aria-label="Echointensität nach Schrägentfernung und Schussnummer; neueste Messung oben, maximal 1000 Schüsse"></canvas></div>
+        </section>
       </div>
     </main>
 
@@ -396,6 +421,7 @@
       const WORLD_WIDTH = 1000;
       const WORLD_HEIGHT = 500;
       const MAX_RANGE = 1000;
+      const MAX_HISTORY_SHOTS = 1000;
       const MAX_SEAFLOOR_SPACING_DISTANCE = 5000;
       const MIN_SIGNAL_DB = -80;
       const SEAFLOOR_Y = 405;
@@ -413,8 +439,10 @@
 
       const scene = document.querySelector("#scene");
       const plot = document.querySelector("#plot");
+      const historyCanvas = document.querySelector("#history");
       const sceneContext = scene.getContext("2d");
       const plotContext = plot.getContext("2d");
+      const historyContext = historyCanvas.getContext("2d");
       const status = document.querySelector("#status");
       const beamInput = document.querySelector("#beam-width");
       const rayInput = document.querySelector("#ray-count");
@@ -422,6 +450,8 @@
       const attenuationInput = document.querySelector("#attenuation");
       const equalSpacingInput = document.querySelector("#equal-spacing");
       const deleteButton = document.querySelector("#delete-selected");
+      const historyCountInput = document.querySelector("#history-count");
+      const addHistoryButton = document.querySelector("#add-history");
 
       const initialTargets = () => [
         { kind: "rectangle", x1: 0.29, y1: 0.54, x2: 0.34, y2: 0.68 },
@@ -438,6 +468,8 @@
       let lastSignal = new Array(Number(rangeInput.value)).fill(0);
       let comparisonSignal = null;
       let lastRays = [];
+      let echoHistory = [];
+      let hasCurrentPing = false;
 
       function resizeCanvas(canvas, context) {
         const bounds = canvas.getBoundingClientRect();
@@ -663,6 +695,8 @@
         const result = simulatePing(targets, options);
         lastSignal = result.signal;
         lastRays = result.rays;
+        hasCurrentPing = true;
+        addHistoryButton.disabled = false;
         comparisonSignal = null;
         if (selectedIndex >= 0 && selectedIndex < targets.length) {
           const comparisonTargets = targets.filter((_target, index) => index !== selectedIndex);
@@ -686,9 +720,23 @@
         lastSignal = new Array(Number(rangeInput.value)).fill(0);
         comparisonSignal = null;
         lastRays = [];
+        hasCurrentPing = false;
+        addHistoryButton.disabled = true;
         status.textContent = message;
         drawScene();
         drawPlot();
+      }
+
+      function addCurrentEchoToHistory() {
+        if (!historyCountInput.reportValidity()) return;
+        const repeatCount = historyCountInput.valueAsNumber;
+        const shot = lastSignal.slice();
+        for (let index = 0; index < repeatCount; index++) {
+          echoHistory.unshift(shot);
+          if (echoHistory.length > MAX_HISTORY_SHOTS) echoHistory.pop();
+        }
+        status.textContent = `${repeatCount} ${repeatCount === 1 ? "Schuss" : "Schüsse"} zum Echoverlauf hinzugefügt · ${echoHistory.length}/${MAX_HISTORY_SHOTS} gespeichert`;
+        drawHistory();
       }
 
       function drawScene() {
@@ -903,6 +951,72 @@
         }
       }
 
+      function drawHistory() {
+        const size = resizeCanvas(historyCanvas, historyContext);
+        const ctx = historyContext;
+        ctx.clearRect(0, 0, size.width, size.height);
+        ctx.fillStyle = "#18332f";
+        ctx.fillRect(0, 0, size.width, size.height);
+
+        const ratio = historyCanvas.width / Math.max(size.width, 1);
+        const left = Math.round(38 * ratio);
+        const right = Math.round(10 * ratio);
+        const top = Math.round(8 * ratio);
+        const bottom = Math.round(22 * ratio);
+        const imageWidth = historyCanvas.width - left - right;
+        const imageHeight = historyCanvas.height - top - bottom;
+        if (imageWidth <= 0 || imageHeight <= 0) return;
+
+        const image = ctx.createImageData(imageWidth, imageHeight);
+        for (let y = 0; y < imageHeight; y++) {
+          const firstShot = Math.floor(y / imageHeight * MAX_HISTORY_SHOTS);
+          const lastShot = Math.max(firstShot + 1, Math.ceil((y + 1) / imageHeight * MAX_HISTORY_SHOTS));
+          for (let x = 0; x < imageWidth; x++) {
+            const binFraction = (x + 0.5) / imageWidth;
+            let intensity = 0;
+            for (let shotIndex = firstShot; shotIndex < lastShot; shotIndex++) {
+              const signal = echoHistory[shotIndex];
+              if (!signal) continue;
+              const binIndex = Math.min(signal.length - 1, Math.floor(binFraction * signal.length));
+              const value = signal[binIndex];
+              if (value > 0) {
+                const decibels = Math.max(20 * Math.log10(value), MIN_SIGNAL_DB);
+                intensity = Math.max(intensity, (decibels - MIN_SIGNAL_DB) / -MIN_SIGNAL_DB);
+              }
+            }
+            const brightness = Math.sqrt(intensity);
+            const pixelIndex = (y * imageWidth + x) * 4;
+            image.data[pixelIndex] = Math.round(24 + (244 - 24) * brightness);
+            image.data[pixelIndex + 1] = Math.round(51 + (154 - 51) * brightness);
+            image.data[pixelIndex + 2] = Math.round(47 + (99 - 47) * brightness);
+            image.data[pixelIndex + 3] = 255;
+          }
+        }
+        ctx.putImageData(image, left, top);
+
+        ctx.font = "9px Aptos, sans-serif";
+        ctx.fillStyle = COLORS.labels;
+        ctx.textAlign = "right";
+        ctx.textBaseline = "middle";
+        for (const [shot, fraction] of [[1, 0], [MAX_HISTORY_SHOTS / 2, 0.5], [MAX_HISTORY_SHOTS, 1]]) {
+          const y = top / ratio + fraction * (imageHeight / ratio);
+          ctx.fillText(String(shot), left / ratio - 5, y);
+        }
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        for (const distance of [0, 250, 500, 750, 1000]) {
+          const x = left / ratio + distance / MAX_RANGE * (imageWidth / ratio);
+          ctx.fillText(String(distance), x, size.height - bottom / ratio + 3);
+        }
+        if (echoHistory.length === 0) {
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillStyle = COLORS.muted;
+          ctx.font = "12px Aptos, sans-serif";
+          ctx.fillText("Ping senden und Echo zum Verlauf hinzufügen", size.width / 2, size.height / 2);
+        }
+      }
+
       function scenePoint(event) {
         const bounds = scene.getBoundingClientRect();
         return {
@@ -963,6 +1077,7 @@
         document.querySelector("#range-value").value = rangeInput.value;
       });
       document.querySelector("#send-ping").addEventListener("click", sendPing);
+      addHistoryButton.addEventListener("click", addCurrentEchoToHistory);
       document.querySelector("#reset-scene").addEventListener("click", () => {
         targets = initialTargets();
         selectedIndex = -1;
@@ -1087,10 +1202,12 @@
       window.addEventListener("resize", () => {
         drawScene();
         drawPlot();
+        drawHistory();
       });
 
       drawScene();
       drawPlot();
+      drawHistory();
     })();
   </script>
 </body>
