@@ -33,7 +33,7 @@
       background: radial-gradient(ellipse at 82% 0%, #fff 0, transparent 48%), var(--paper);
     }
     button, input { font: inherit; }
-    button:focus-visible, input:focus-visible { outline: 3px solid #e6a16c; outline-offset: 3px; }
+    button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #e6a16c; outline-offset: 3px; }
     .app-shell {
       width: min(1480px, 100%);
       height: 100vh;
@@ -53,6 +53,9 @@
     .brand-mark svg { width: 25px; height: 25px; }
     h1 { margin: 0; font: 500 25px/1.1 Georgia, "Times New Roman", serif; letter-spacing: -.3px; }
     .brand p { margin: 5px 0 0; color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: 1.25px; }
+    .top-tools { display: flex; align-items: center; gap: 16px; }
+    .speed-control { display: inline-flex; align-items: center; gap: 7px; color: #64776e; font-size: 9px; font-weight: 800; letter-spacing: .7px; white-space: nowrap; }
+    .speed-control select { min-height: 30px; padding: 4px 7px; border: 1px solid var(--line); border-radius: 4px; color: #31564b; background: #f8faf8; font-size: 11px; font-weight: 700; }
     .ready { display: inline-flex; align-items: center; gap: 9px; color: #5b7066; font-size: 10px; font-weight: 800; letter-spacing: .9px; }
     .ready-dot { width: 8px; height: 8px; border-radius: 50%; background: #68a681; box-shadow: 0 0 0 4px #68a68122; }
     .workspace { flex: 1; min-height: 0; display: grid; grid-template-columns: 276px minmax(0, 1fr); gap: 18px; }
@@ -128,6 +131,10 @@
     }
     @media (max-width: 620px) {
       .app-shell { height: auto; min-height: 100vh; overflow: visible; padding: 13px 12px 12px; gap: 13px; }
+      .topbar { align-items: flex-start; flex-wrap: wrap; }
+      .top-tools { margin-left: auto; gap: 9px; }
+      .speed-control { font-size: 8px; }
+      .speed-control select { min-height: 28px; padding: 3px 5px; font-size: 10px; }
       .brand-mark { width: 36px; height: 36px; }
       h1 { font-size: 21px; }
       .brand p { font-size: 8px; }
@@ -171,7 +178,16 @@
           <p>SONAR PULSE &amp; REFLECTION SIMULATOR</p>
         </div>
       </div>
-      <div class="ready"><span class="ready-dot"></span><span>SIMULATION READY</span></div>
+      <div class="top-tools">
+        <label class="speed-control" for="animation-speed">ANIMATION SPEED
+          <select id="animation-speed">
+            <option value="1">1× Normal</option>
+            <option value="0.5">0.5× Slow</option>
+            <option value="0.25">0.25× Slower</option>
+          </select>
+        </label>
+        <div class="ready"><span class="ready-dot"></span><span>SIMULATION READY</span></div>
+      </div>
     </header>
 
     <main class="workspace">
@@ -271,13 +287,15 @@
       const reflectivityInput = document.querySelector("#reflectivity");
       const periodsInput = document.querySelector("#periods");
       const frequencyInput = document.querySelector("#frequency");
+      const animationSpeedInput = document.querySelector("#animation-speed");
       const depthInput = document.querySelector("#depth");
       const soundSpeedInput = document.querySelector("#sound-speed");
       let objectPosition = { ...INITIAL_OBJECT };
       let placingObject = false;
-      let pingStartedAt = null;
       let animationFrame = null;
       let pingActive = false;
+      let simulatedElapsedMs = 0;
+      let lastFrameAt = null;
       let echoSamples = [];
       let pingPaths = [];
 
@@ -326,10 +344,10 @@
             reflection: Number(reflectivityInput.value) / 100
           });
         }
-        return paths.map(path => ({
-          ...path,
-          delay: 2 * path.distance / soundSpeed * 1000
-        }));
+        return paths.map(path => {
+          const oneWayDelay = path.distance / soundSpeed * 1000;
+          return { ...path, oneWayDelay, delay: 2 * oneWayDelay };
+        });
       }
 
       function makeEchoSamples(paths) {
@@ -342,7 +360,8 @@
       function sendPing() {
         pingPaths = buildPaths();
         echoSamples = makeEchoSamples(pingPaths);
-        pingStartedAt = performance.now();
+        simulatedElapsedMs = 0;
+        lastFrameAt = null;
         pingActive = true;
         if (animationFrame !== null) cancelAnimationFrame(animationFrame);
         status.textContent = "Ping traveling — watch for the returning echoes on the timeline.";
@@ -350,11 +369,12 @@
       }
 
       function animatePing(now) {
-        const elapsed = now - pingStartedAt;
-        const timeMs = Math.min(elapsed / ANIMATION_DURATION_MS * TIME_WINDOW_MS, TIME_WINDOW_MS);
+        if (lastFrameAt !== null) simulatedElapsedMs += (now - lastFrameAt) * Number(animationSpeedInput.value);
+        lastFrameAt = now;
+        const timeMs = Math.min(simulatedElapsedMs / ANIMATION_DURATION_MS * TIME_WINDOW_MS, TIME_WINDOW_MS);
         drawScene(timeMs);
         drawWaveform(timeMs);
-        if (elapsed < ANIMATION_DURATION_MS) {
+        if (simulatedElapsedMs < ANIMATION_DURATION_MS) {
           animationFrame = requestAnimationFrame(animatePing);
         } else {
           animationFrame = null;
@@ -418,6 +438,43 @@
 
         const origin = { x: sx(SOURCE), y: sy(SOURCE) };
         const paths = pingActive ? pingPaths : buildPaths();
+        const soundSpeed = Number(soundSpeedInput.value);
+        const pixelsPerMeterX = width * (FLOOR_Y - SOURCE.y) / Number(depthInput.value);
+        const pixelsPerMeterY = height * (FLOOR_Y - SOURCE.y) / Number(depthInput.value);
+        const wavelengthMeters = soundSpeed / (Number(frequencyInput.value) * 1000);
+        const drawWavePacket = (center, radiusMeters, startAngle, endAngle, color, alpha) => {
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(0, 0, width, floorY);
+          ctx.clip();
+          ctx.globalAlpha = alpha;
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2;
+          for (let cycle = 0; cycle < Number(periodsInput.value); cycle++) {
+            const waveRadiusMeters = radiusMeters - cycle * wavelengthMeters;
+            if (waveRadiusMeters <= 0) break;
+            ctx.beginPath();
+            ctx.ellipse(
+              center.x,
+              center.y,
+              waveRadiusMeters * pixelsPerMeterX,
+              waveRadiusMeters * pixelsPerMeterY,
+              0,
+              startAngle,
+              endAngle
+            );
+            ctx.stroke();
+          }
+          ctx.restore();
+        };
+
+        if (pingActive) {
+          const outboundDuration = Math.max(...paths.map(path => path.oneWayDelay));
+          if (timeMs <= outboundDuration) {
+            drawWavePacket(origin, soundSpeed * timeMs / 1000, 0, Math.PI, "#c56c45", .72);
+          }
+        }
+
         paths.forEach(path => {
           const end = { x: sx(path.end), y: sy(path.end) };
           const isObject = path.kind === "object";
@@ -435,30 +492,20 @@
 
           if (pingActive) {
             const delay = Math.max(path.delay, 0.01);
-            let fraction = null;
-            if (timeMs <= delay / 2) fraction = timeMs / (delay / 2);
-            else if (timeMs <= delay) fraction = (timeMs - delay / 2) / (delay / 2);
-            if (fraction !== null) {
-              const travelingOut = timeMs <= delay / 2;
-              const from = travelingOut ? origin : end;
-              const to = travelingOut ? end : origin;
-              const x = from.x + (to.x - from.x) * fraction;
-              const y = from.y + (to.y - from.y) * fraction;
+            if (timeMs >= path.oneWayDelay && timeMs <= delay) {
+              const returnTimeMs = timeMs - path.oneWayDelay;
+              drawWavePacket(end, soundSpeed * returnTimeMs / 1000, Math.PI, Math.PI * 2, color, path.reflection);
+            }
+            const pulseDurationMs = Number(periodsInput.value) / Number(frequencyInput.value);
+            const timeSinceImpact = timeMs - path.oneWayDelay;
+            if (path.reflection > 0 && timeSinceImpact >= 0 && timeSinceImpact < pulseDurationMs) {
+              const fade = 1 - timeSinceImpact / pulseDurationMs;
               ctx.save();
-              ctx.globalAlpha = .2;
+              ctx.globalAlpha = fade;
               ctx.strokeStyle = color;
-              ctx.lineWidth = 7;
+              ctx.lineWidth = 2;
               ctx.beginPath();
-              ctx.moveTo(from.x, from.y);
-              ctx.lineTo(x, y);
-              ctx.stroke();
-              ctx.globalAlpha = 1;
-              ctx.fillStyle = "#fff";
-              ctx.strokeStyle = color;
-              ctx.lineWidth = 3;
-              ctx.beginPath();
-              ctx.arc(x, y, 5.5, 0, Math.PI * 2);
-              ctx.fill();
+              ctx.arc(end.x, end.y, 12 + (1 - fade) * 8, 0, Math.PI * 2);
               ctx.stroke();
               ctx.restore();
             }
@@ -619,8 +666,11 @@
       }
 
       function getCurrentTimeMs() {
-        if (!pingActive || pingStartedAt === null) return TIME_WINDOW_MS;
-        return Math.min((performance.now() - pingStartedAt) / ANIMATION_DURATION_MS * TIME_WINDOW_MS, TIME_WINDOW_MS);
+        if (!pingActive) return TIME_WINDOW_MS;
+        const pendingElapsed = lastFrameAt === null
+          ? 0
+          : (performance.now() - lastFrameAt) * Number(animationSpeedInput.value);
+        return Math.min((simulatedElapsedMs + pendingElapsed) / ANIMATION_DURATION_MS * TIME_WINDOW_MS, TIME_WINDOW_MS);
       }
 
       function refreshSettings() {
@@ -660,12 +710,14 @@
         if (animationFrame !== null) cancelAnimationFrame(animationFrame);
         animationFrame = null;
         pingActive = false;
-        pingStartedAt = null;
+        simulatedElapsedMs = 0;
+        lastFrameAt = null;
         echoSamples = [];
         pingPaths = [];
         objectPosition = { ...INITIAL_OBJECT };
         periodsInput.value = "4";
         frequencyInput.value = "4";
+        animationSpeedInput.value = "1";
         reflectivityInput.value = "65";
         depthInput.value = "12";
         soundSpeedInput.value = "1500";
