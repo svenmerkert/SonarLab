@@ -75,12 +75,16 @@
     .check-row { display: flex; align-items: center; gap: 9px; cursor: pointer; }
     .check-row input { width: 15px; height: 15px; margin: 0; accent-color: #28735f; }
     .helper { margin: 6px 0 0; color: #839189; font-size: 10px; line-height: 1.4; }
-    .place-button {
-      width: 100%; min-height: 34px; margin-top: 8px; padding: 5px 9px;
-      border: 1px solid #b8cec3; border-radius: 4px; color: #285346; background: #f3f8f4;
-      cursor: pointer; font-size: 11px; font-weight: 750;
+    .object-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; margin-top: 8px; }
+    .object-actions button {
+      min-width: 0; min-height: 32px; padding: 4px 3px; border: 1px solid #b8cec3;
+      border-radius: 4px; color: #285346; background: #f3f8f4; cursor: pointer;
+      font-size: 10px; font-weight: 750;
     }
-    .place-button:hover, .place-button[aria-pressed="true"] { border-color: #6a9d87; background: #e4f0e9; }
+    .object-actions button:hover:not(:disabled), .object-actions button[aria-pressed="true"] { border-color: #6a9d87; background: #e4f0e9; }
+    .object-actions .delete-object-button { border-color: #e1d4ce; color: #8b4937; background: #fffaf8; }
+    .object-actions .delete-object-button:hover:not(:disabled) { border-color: #c97b64; background: #fff1eb; }
+    .object-actions button:disabled { border-color: #e6e9e5; color: #9da8a2; background: #f7f8f6; cursor: not-allowed; }
     .actions { display: grid; gap: 6px; margin-top: auto; }
     .ping-button, .reset-button {
       min-height: 38px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 800;
@@ -209,11 +213,15 @@
 
         <section class="control-section object-section">
           <h2 class="section-label">REFLECTOR</h2>
-          <label class="check-row"><input id="object-enabled" type="checkbox" checked><span>Include object</span></label>
-          <button class="place-button" id="place-object" type="button" aria-pressed="false">Place / move object</button>
-          <p class="helper" id="object-hint">Click in the water to position it.</p>
+          <label class="check-row"><input id="object-enabled" type="checkbox" checked><span>Include objects</span></label>
+          <div class="object-actions">
+            <button class="place-button" id="place-object" type="button" aria-label="Add an object" title="Add an object" aria-pressed="false">Add</button>
+            <button class="move-object-button" id="move-object" type="button" aria-label="Move selected object" title="Move selected object" aria-pressed="false" disabled>Move</button>
+            <button class="delete-object-button" id="delete-object" type="button" aria-label="Delete selected object" title="Delete selected object" disabled>Delete</button>
+          </div>
+          <p class="helper" id="object-hint">Select an object to adjust its reflection, or add one.</p>
           <div class="range-setting">
-            <div class="range-heading"><label for="reflectivity">Reflection</label><output class="range-value" id="reflectivity-value" for="reflectivity">65%</output></div>
+            <div class="range-heading"><label id="reflectivity-label" for="reflectivity">Object reflection</label><output class="range-value" id="reflectivity-value" for="reflectivity">65%</output></div>
             <input id="reflectivity" type="range" min="0" max="100" value="65" step="1">
             <div class="range-bounds"><span>0%</span><span>100%</span></div>
           </div>
@@ -277,22 +285,28 @@
       const EXIT_MARGIN_METERS = 0.1;
       const FLOOR_Y = 0.78;
       const SOURCE = { x: 0.5, y: 0.15 };
-      const INITIAL_OBJECT = { x: 0.69, y: 0.59 };
+      const INITIAL_OBJECT = { x: 0.69, y: 0.59, reflectivity: 0.65 };
       const scene = document.querySelector("#scene");
       const waveform = document.querySelector("#waveform");
       const sceneContext = scene.getContext("2d");
       const waveformContext = waveform.getContext("2d");
       const status = document.querySelector("#status");
       const objectEnabled = document.querySelector("#object-enabled");
-      const placeButton = document.querySelector("#place-object");
+      const addObjectButton = document.querySelector("#place-object");
+      const moveObjectButton = document.querySelector("#move-object");
+      const deleteObjectButton = document.querySelector("#delete-object");
       const reflectivityInput = document.querySelector("#reflectivity");
+      const reflectivityLabel = document.querySelector("#reflectivity-label");
+      const reflectivityValue = document.querySelector("#reflectivity-value");
+      const objectHint = document.querySelector("#object-hint");
       const periodsInput = document.querySelector("#periods");
       const frequencyInput = document.querySelector("#frequency");
       const animationSpeedInput = document.querySelector("#animation-speed");
       const depthInput = document.querySelector("#depth");
       const soundSpeedInput = document.querySelector("#sound-speed");
-      let objectPosition = { ...INITIAL_OBJECT };
-      let placingObject = false;
+      let objects = [{ ...INITIAL_OBJECT }];
+      let selectedObjectIndex = 0;
+      let placementMode = null;
       let animationFrame = null;
       let pingActive = false;
       let simulatedElapsedMs = 0;
@@ -337,16 +351,17 @@
           distance: sceneDepth,
           reflection: 0.72
         }];
-        if (objectEnabled.checked) {
-          const dx = (objectPosition.x - SOURCE.x) * depthMeters / (FLOOR_Y - SOURCE.y);
-          const dy = (objectPosition.y - SOURCE.y) * depthMeters / (FLOOR_Y - SOURCE.y);
+        if (objectEnabled.checked) objects.forEach((object, objectIndex) => {
+          const dx = (object.x - SOURCE.x) * depthMeters / (FLOOR_Y - SOURCE.y);
+          const dy = (object.y - SOURCE.y) * depthMeters / (FLOOR_Y - SOURCE.y);
           paths.push({
             kind: "object",
-            end: { ...objectPosition },
+            objectIndex,
+            end: { x: object.x, y: object.y },
             distance: Math.hypot(dx, dy),
-            reflection: Number(reflectivityInput.value) / 100
+            reflection: object.reflectivity
           });
-        }
+        });
         return paths.map(path => {
           const oneWayDelay = path.distance / soundSpeed * 1000;
           return { ...path, oneWayDelay, delay: 2 * oneWayDelay };
@@ -518,13 +533,18 @@
           ctx.stroke();
           ctx.restore();
 
-          if (isObject) {
+        });
+
+        if (objectEnabled.checked) {
+          objects.forEach((object, objectIndex) => {
+            const end = { x: sx(object), y: sy(object) };
+            const selected = objectIndex === selectedObjectIndex;
             ctx.save();
-            ctx.fillStyle = objectEnabled.checked ? "#74bca6" : "#b8c9c0";
-            ctx.strokeStyle = objectEnabled.checked ? "#286f5b" : "#84978d";
-            ctx.lineWidth = 2;
+            ctx.fillStyle = selected ? "#74bca6" : "#a8c9bc";
+            ctx.strokeStyle = selected ? "#286f5b" : "#5c8d7b";
+            ctx.lineWidth = selected ? 2.5 : 1.5;
             ctx.beginPath();
-            ctx.arc(end.x, end.y, 10, 0, Math.PI * 2);
+            ctx.arc(end.x, end.y, selected ? 11 : 9, 0, Math.PI * 2);
             ctx.fill();
             ctx.stroke();
             ctx.fillStyle = "#fff";
@@ -534,10 +554,10 @@
             ctx.fillStyle = "#315b4c";
             ctx.font = "700 10px Aptos, sans-serif";
             ctx.textAlign = end.x > width * .72 ? "right" : "left";
-            ctx.fillText(`OBJECT · ${reflectivityInput.value}%`, end.x + (end.x > width * .72 ? -14 : 14), end.y - 13);
+            ctx.fillText(`OBJECT ${objectIndex + 1} · ${Math.round(object.reflectivity * 100)}%`, end.x + (end.x > width * .72 ? -14 : 14), end.y - 13);
             ctx.restore();
-          }
-        });
+          });
+        }
 
         if (pingActive) {
           if (timeMs <= outgoingEndTimeMs) {
@@ -585,11 +605,11 @@
         ctx.font = "800 10px Aptos, sans-serif";
         ctx.textAlign = "center";
         ctx.fillText("TRANSDUCER", origin.x, origin.y - 15);
-        if (placingObject) {
+        if (placementMode !== null) {
           ctx.fillStyle = "rgb(31 77 63 / 88%)";
           ctx.font = "700 11px Aptos, sans-serif";
           ctx.textAlign = "center";
-          ctx.fillText("CLICK TO PLACE THE OBJECT", width / 2, 22);
+          ctx.fillText(placementMode === "add" ? "CLICK TO ADD OBJECT" : "CLICK TO MOVE OBJECT", width / 2, 22);
         }
       }
 
@@ -696,14 +716,41 @@
         }
       }
 
-      function setPlacementMode(active) {
-        placingObject = active;
-        placeButton.setAttribute("aria-pressed", String(active));
-        placeButton.textContent = active ? "Click the scene to place" : "Place / move object";
-        scene.classList.toggle("placing", active);
-        document.querySelector("#object-hint").textContent = active
-          ? "Choose a point above the seafloor."
-          : "Click in the water to position it.";
+      function updateObjectControls() {
+        const selected = objects[selectedObjectIndex];
+        const hasSelection = selected !== undefined;
+        if (hasSelection) {
+          reflectivityInput.value = String(Math.round(selected.reflectivity * 100));
+          reflectivityValue.value = `${reflectivityInput.value}%`;
+          reflectivityLabel.textContent = `Object ${selectedObjectIndex + 1} reflection`;
+        } else {
+          reflectivityValue.value = "—";
+          reflectivityLabel.textContent = "Object reflection";
+        }
+        reflectivityInput.disabled = !objectEnabled.checked || !hasSelection;
+        addObjectButton.disabled = !objectEnabled.checked;
+        moveObjectButton.disabled = !objectEnabled.checked || !hasSelection;
+        deleteObjectButton.disabled = !hasSelection;
+      }
+
+      function setPlacementMode(mode) {
+        placementMode = mode;
+        const adding = mode === "add";
+        const moving = mode === "move";
+        addObjectButton.setAttribute("aria-pressed", String(adding));
+        addObjectButton.textContent = adding ? "Done" : "Add";
+        addObjectButton.setAttribute("aria-label", adding ? "Finish adding objects" : "Add an object");
+        addObjectButton.title = adding ? "Finish adding objects" : "Add an object";
+        moveObjectButton.setAttribute("aria-pressed", String(moving));
+        scene.classList.toggle("placing", mode !== null);
+        objectHint.textContent = adding
+          ? "Click the water to add objects; select Done when finished."
+          : moving
+            ? `Click the water to move Object ${selectedObjectIndex + 1}.`
+            : selectedObjectIndex >= 0
+              ? `Object ${selectedObjectIndex + 1} selected. Adjust its reflection or add another.`
+              : "Select an object to adjust its reflection, or add one.";
+        updateObjectControls();
         drawScene(pingActive ? getCurrentTimeMs() : TIME_WINDOW_MS);
       }
 
@@ -718,34 +765,81 @@
       function refreshSettings() {
         document.querySelector("#periods-value").value = `${periodsInput.value} ${Number(periodsInput.value) === 1 ? "cycle" : "cycles"}`;
         document.querySelector("#frequency-value").value = `${Number(frequencyInput.value).toFixed(1)} kHz`;
-        document.querySelector("#reflectivity-value").value = `${reflectivityInput.value}%`;
         document.querySelector("#depth-value").value = `${depthInput.value} m`;
         document.querySelector("#sound-speed-value").value = `${soundSpeedInput.value} m/s`;
-        reflectivityInput.disabled = !objectEnabled.checked;
-        placeButton.disabled = !objectEnabled.checked;
+        updateObjectControls();
         if (pingActive) sendPing();
         else drawScene(TIME_WINDOW_MS);
       }
 
-      placeButton.addEventListener("click", () => setPlacementMode(!placingObject));
+      addObjectButton.addEventListener("click", () => setPlacementMode(placementMode === "add" ? null : "add"));
+      moveObjectButton.addEventListener("click", () => {
+        if (selectedObjectIndex >= 0) setPlacementMode(placementMode === "move" ? null : "move");
+      });
+      deleteObjectButton.addEventListener("click", () => {
+        if (selectedObjectIndex < 0) return;
+        objects.splice(selectedObjectIndex, 1);
+        selectedObjectIndex = objects.length ? Math.min(selectedObjectIndex, objects.length - 1) : -1;
+        setPlacementMode(null);
+        status.textContent = objects.length
+          ? `Object deleted. Object ${selectedObjectIndex + 1} is selected.`
+          : "Object deleted. Add an object or use the seafloor reflector.";
+      });
+      reflectivityInput.addEventListener("input", () => {
+        const selected = objects[selectedObjectIndex];
+        if (!selected) return;
+        selected.reflectivity = Number(reflectivityInput.value) / 100;
+        updateObjectControls();
+        if (pingActive) sendPing();
+        else drawScene(TIME_WINDOW_MS);
+      });
       scene.addEventListener("click", event => {
-        if (!placingObject) return;
         const bounds = scene.getBoundingClientRect();
         const x = Math.max(.05, Math.min(.95, (event.clientX - bounds.left) / bounds.width));
         const y = Math.max(.2, Math.min(FLOOR_Y - .06, (event.clientY - bounds.top) / bounds.height));
-        objectPosition = { x, y };
-        setPlacementMode(false);
-        status.textContent = "Object moved. Send a ping to measure its reflection.";
+        if (placementMode === "add") {
+          objects.push({ x, y, reflectivity: Number(reflectivityInput.value) / 100 });
+          selectedObjectIndex = objects.length - 1;
+          updateObjectControls();
+          drawScene(pingActive ? getCurrentTimeMs() : TIME_WINDOW_MS);
+          status.textContent = `Object ${selectedObjectIndex + 1} added. Send a ping to measure its reflection.`;
+          return;
+        }
+        if (placementMode === "move") {
+          if (selectedObjectIndex < 0) return;
+          objects[selectedObjectIndex] = { ...objects[selectedObjectIndex], x, y };
+          setPlacementMode(null);
+          status.textContent = `Object ${selectedObjectIndex + 1} moved. Send a ping to measure its reflection.`;
+          return;
+        }
+
+        const clickX = event.clientX - bounds.left;
+        const clickY = event.clientY - bounds.top;
+        let closestObjectIndex = -1;
+        let closestDistance = 16;
+        objects.forEach((object, objectIndex) => {
+          const distance = Math.hypot(object.x * bounds.width - clickX, object.y * bounds.height - clickY);
+          if (distance < closestDistance) {
+            closestDistance = distance;
+            closestObjectIndex = objectIndex;
+          }
+        });
+        selectedObjectIndex = closestObjectIndex;
+        setPlacementMode(null);
+        if (selectedObjectIndex >= 0) {
+          status.textContent = `Object ${selectedObjectIndex + 1} selected. Adjust its reflection strength.`;
+        }
       });
 
-      [periodsInput, frequencyInput, reflectivityInput, depthInput, soundSpeedInput].forEach(input => {
+      [periodsInput, frequencyInput, depthInput, soundSpeedInput].forEach(input => {
         input.addEventListener("input", refreshSettings);
       });
       objectEnabled.addEventListener("change", () => {
+        if (!objectEnabled.checked) setPlacementMode(null);
         refreshSettings();
         status.textContent = objectEnabled.checked
-          ? "Object reflector enabled. Send a ping to include its echo."
-          : "Object reflector disabled. Only the seafloor echo will be received.";
+          ? "Object reflectors enabled. Send a ping to include their echoes."
+          : "Object reflectors disabled. Only the seafloor echo will be received.";
       });
       document.querySelector("#send-ping").addEventListener("click", sendPing);
       document.querySelector("#reset").addEventListener("click", () => {
@@ -758,7 +852,8 @@
         pingEndTimeMs = TIME_WINDOW_MS;
         echoSamples = [];
         pingPaths = [];
-        objectPosition = { ...INITIAL_OBJECT };
+        objects = [{ ...INITIAL_OBJECT }];
+        selectedObjectIndex = 0;
         periodsInput.value = "4";
         frequencyInput.value = "4";
         animationSpeedInput.value = "1";
@@ -766,7 +861,7 @@
         depthInput.value = "12";
         soundSpeedInput.value = "1500";
         objectEnabled.checked = true;
-        setPlacementMode(false);
+        setPlacementMode(null);
         refreshSettings();
         drawWaveform();
         status.textContent = "Simulation reset. Set the pulse and reflectors, then send a ping.";
