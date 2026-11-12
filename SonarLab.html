@@ -436,6 +436,14 @@
         labels: "#bdcec7",
         muted: "#9bb3aa"
       };
+      const HISTORY_COLOR_STOPS = [
+        [24, 51, 47],
+        [22, 102, 127],
+        [69, 178, 180],
+        [241, 216, 103],
+        [239, 127, 68],
+        [250, 232, 197]
+      ];
 
       const scene = document.querySelector("#scene");
       const plot = document.querySelector("#plot");
@@ -984,11 +992,18 @@
                 intensity = Math.max(intensity, (decibels - MIN_SIGNAL_DB) / -MIN_SIGNAL_DB);
               }
             }
-            const brightness = Math.sqrt(intensity);
+            const colorPosition = intensity * (HISTORY_COLOR_STOPS.length - 1);
+            const lowerStopIndex = Math.floor(colorPosition);
+            const upperStopIndex = Math.min(lowerStopIndex + 1, HISTORY_COLOR_STOPS.length - 1);
+            const colorFraction = colorPosition - lowerStopIndex;
+            const lowerColor = HISTORY_COLOR_STOPS[lowerStopIndex];
+            const upperColor = HISTORY_COLOR_STOPS[upperStopIndex];
             const pixelIndex = (y * imageWidth + x) * 4;
-            image.data[pixelIndex] = Math.round(24 + (244 - 24) * brightness);
-            image.data[pixelIndex + 1] = Math.round(51 + (154 - 51) * brightness);
-            image.data[pixelIndex + 2] = Math.round(47 + (99 - 47) * brightness);
+            for (let channel = 0; channel < 3; channel++) {
+              image.data[pixelIndex + channel] = Math.round(
+                lowerColor[channel] + (upperColor[channel] - lowerColor[channel]) * colorFraction
+              );
+            }
             image.data[pixelIndex + 3] = 255;
           }
         }
