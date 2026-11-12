@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="de">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#edf1ed">
-  <title>Echo Ping Lab</title>
+  <title>Echo-Ping-Labor</title>
   <style>
     :root {
       color-scheme: light;
@@ -178,100 +178,100 @@
           </svg>
         </div>
         <div>
-          <h1>Echo Ping Lab</h1>
-          <p>SONAR PULSE &amp; REFLECTION SIMULATOR</p>
+          <h1>Echo-Ping-Labor</h1>
+          <p>SONARIMPULS-SIMULATOR</p>
         </div>
       </div>
       <div class="top-tools">
-        <label class="speed-control" for="animation-speed">ANIMATION SPEED
+        <label class="speed-control" for="animation-speed">ANIMATIONSTEMPO
           <select id="animation-speed">
             <option value="1">1× Normal</option>
-            <option value="0.5">0.5× Slow</option>
-            <option value="0.25">0.25× Slower</option>
+            <option value="0.5">0,5× Langsam</option>
+            <option value="0.25">0,25× Sehr langsam</option>
           </select>
         </label>
-        <div class="ready"><span class="ready-dot"></span><span>SIMULATION READY</span></div>
+        <div class="ready"><span class="ready-dot"></span><span>SIMULATION BEREIT</span></div>
       </div>
     </header>
 
     <main class="workspace">
-      <aside class="controls" aria-label="Ping settings">
+      <aside class="controls" aria-label="Ping-Einstellungen">
         <section class="control-section pulse-section">
-          <h2 class="section-label">TRANSMITTED PULSE</h2>
+          <h2 class="section-label">AUSGESENDETER IMPULS</h2>
           <div class="range-setting">
-            <div class="range-heading"><label for="periods">Sine periods</label><output class="range-value" id="periods-value" for="periods">4 cycles</output></div>
+            <div class="range-heading"><label for="periods">Sinusperioden</label><output class="range-value" id="periods-value" for="periods">4 Perioden</output></div>
             <input id="periods" type="range" min="1" max="12" value="4" step="1">
             <div class="range-bounds"><span>1</span><span>12</span></div>
           </div>
           <div class="range-setting">
-            <div class="range-heading"><label for="frequency">Frequency</label><output class="range-value" id="frequency-value" for="frequency">4.0 kHz</output></div>
+            <div class="range-heading"><label for="frequency">Frequenz</label><output class="range-value" id="frequency-value" for="frequency">4,0 kHz</output></div>
             <input id="frequency" type="range" min="2" max="20" value="4" step="0.5">
             <div class="range-bounds"><span>2 kHz</span><span>20 kHz</span></div>
           </div>
-          <p class="helper">Sine carrier shaped by a Hann (cosine) window.</p>
+          <p class="helper">Sinusträger, geformt mit einem Hann-Fenster (Kosinusfenster).</p>
         </section>
 
         <section class="control-section object-section">
-          <h2 class="section-label">REFLECTOR</h2>
-          <label class="check-row"><input id="object-enabled" type="checkbox" checked><span>Include objects</span></label>
+          <h2 class="section-label">REFLEKTOREN</h2>
+          <label class="check-row"><input id="object-enabled" type="checkbox" checked><span>Objekte einbeziehen</span></label>
           <div class="object-actions">
-            <button class="place-button" id="place-object" type="button" aria-label="Add an object" title="Add an object" aria-pressed="false">Add</button>
-            <button class="move-object-button" id="move-object" type="button" aria-label="Move selected object" title="Move selected object" aria-pressed="false" disabled>Move</button>
-            <button class="delete-object-button" id="delete-object" type="button" aria-label="Delete selected object" title="Delete selected object" disabled>Delete</button>
+            <button class="place-button" id="place-object" type="button" aria-label="Objekt hinzufügen" title="Objekt hinzufügen" aria-pressed="false">Hinzufügen</button>
+            <button class="move-object-button" id="move-object" type="button" aria-label="Ausgewähltes Objekt verschieben" title="Ausgewähltes Objekt verschieben" aria-pressed="false" disabled>Verschieben</button>
+            <button class="delete-object-button" id="delete-object" type="button" aria-label="Ausgewähltes Objekt löschen" title="Ausgewähltes Objekt löschen" disabled>Löschen</button>
           </div>
-          <p class="helper" id="object-hint">Select an object to adjust its reflection, or add one.</p>
+          <p class="helper" id="object-hint">Objekt auswählen, um seine Reflexion anzupassen, oder ein weiteres hinzufügen.</p>
           <div class="range-setting">
-            <div class="range-heading"><label id="reflectivity-label" for="reflectivity">Object reflection</label><output class="range-value" id="reflectivity-value" for="reflectivity">65%</output></div>
+            <div class="range-heading"><label id="reflectivity-label" for="reflectivity">Objektreflexion</label><output class="range-value" id="reflectivity-value" for="reflectivity">65 %</output></div>
             <input id="reflectivity" type="range" min="0" max="100" value="65" step="1">
-            <div class="range-bounds"><span>0%</span><span>100%</span></div>
+            <div class="range-bounds"><span>0 %</span><span>100 %</span></div>
           </div>
         </section>
 
         <section class="control-section settings-section">
-          <h2 class="section-label">ENVIRONMENT</h2>
+          <h2 class="section-label">UMGEBUNG</h2>
           <div class="range-setting">
-            <div class="range-heading"><label for="depth">Water depth</label><output class="range-value" id="depth-value" for="depth">12 m</output></div>
+            <div class="range-heading"><label for="depth">Wassertiefe</label><output class="range-value" id="depth-value" for="depth">12 m</output></div>
             <input id="depth" type="range" min="6" max="24" value="12" step="1">
             <div class="range-bounds"><span>6 m</span><span>24 m</span></div>
           </div>
           <div class="range-setting">
-            <div class="range-heading"><label for="sound-speed">Sound speed</label><output class="range-value" id="sound-speed-value" for="sound-speed">1500 m/s</output></div>
+            <div class="range-heading"><label for="sound-speed">Schallgeschwindigkeit</label><output class="range-value" id="sound-speed-value" for="sound-speed">1.500 m/s</output></div>
             <input id="sound-speed" type="range" min="1400" max="1600" value="1500" step="10">
-            <div class="range-bounds"><span>1400</span><span>1600 m/s</span></div>
+            <div class="range-bounds"><span>1.400</span><span>1.600 m/s</span></div>
           </div>
         </section>
 
         <div class="actions">
-          <button class="ping-button" id="send-ping" type="button">▶ &nbsp; Send ping</button>
-          <button class="reset-button" id="reset" type="button">Reset simulation</button>
+          <button class="ping-button" id="send-ping" type="button">▶ &nbsp; Ping senden</button>
+          <button class="reset-button" id="reset" type="button">Simulation zurücksetzen</button>
         </div>
       </aside>
 
       <div class="visuals">
         <section class="panel scene-panel" aria-labelledby="scene-title">
           <div class="panel-head">
-            <h2 class="panel-title" id="scene-title">01 &nbsp; PING PROPAGATION</h2>
-            <div class="legend" aria-label="Echo legend">
-              <span class="legend-item"><span class="legend-swatch"></span>SEAFLOOR</span>
-              <span class="legend-item"><span class="legend-swatch object"></span>OBJECT</span>
+            <h2 class="panel-title" id="scene-title">01 &nbsp; IMPULSAUSBREITUNG</h2>
+            <div class="legend" aria-label="Echo-Legende">
+              <span class="legend-item"><span class="legend-swatch"></span>MEERESBODEN</span>
+              <span class="legend-item"><span class="legend-swatch object"></span>OBJEKT</span>
             </div>
           </div>
-          <div class="scene-wrap"><canvas id="scene" aria-label="Animated sonar pulse traveling to reflectors and returning to the transducer"></canvas></div>
+          <div class="scene-wrap"><canvas id="scene" aria-label="Animierter Sonarimpuls, der zu den Reflektoren läuft, reflektiert wird und zum Schallwandler zurückkehrt"></canvas></div>
         </section>
 
         <section class="panel plot-panel" aria-labelledby="plot-title">
           <div class="panel-head">
-            <h2 class="panel-title" id="plot-title">02 &nbsp; RECEIVED SIGNAL</h2>
-            <span class="panel-detail">AMPLITUDE OVER TIME</span>
+            <h2 class="panel-title" id="plot-title">02 &nbsp; EMPFANGENES SIGNAL</h2>
+            <span class="panel-detail">AMPLITUDE ÜBER ZEIT</span>
           </div>
-          <div class="plot-wrap"><canvas id="waveform" aria-label="Received echo waveform amplitude over time in milliseconds"></canvas></div>
+          <div class="plot-wrap"><canvas id="waveform" aria-label="Amplitude des empfangenen Echosignals im Zeitverlauf in Millisekunden"></canvas></div>
         </section>
       </div>
     </main>
 
     <footer class="statusbar" aria-live="polite">
-      <span id="status">Set the pulse and reflectors, then send a ping to watch the echoes arrive.</span>
-      <span class="status-note">SOUND SPEED IN WATER · 1,500 M/S</span>
+      <span id="status">Stellen Sie den Impuls und die Reflektoren ein und senden Sie einen Ping, um die Echos zu beobachten.</span>
+      <span class="status-note">SCHALLGESCHWINDIGKEIT IM WASSER · 1.500 M/S</span>
     </footer>
   </div>
 
@@ -283,6 +283,8 @@
       const SAMPLE_COUNT = 1800;
       const ANIMATION_DURATION_MS = 5200;
       const EXIT_MARGIN_METERS = 0.1;
+      const germanDecimal = new Intl.NumberFormat("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+      const germanInteger = new Intl.NumberFormat("de-DE");
       const FLOOR_Y = 0.78;
       const SOURCE = { x: 0.5, y: 0.15 };
       const INITIAL_OBJECT = { x: 0.69, y: 0.59, reflectivity: 0.65 };
@@ -413,7 +415,7 @@
         lastFrameAt = null;
         pingActive = true;
         if (animationFrame !== null) cancelAnimationFrame(animationFrame);
-        status.textContent = "Ping traveling — watch for the returning echoes on the timeline.";
+        status.textContent = "Ping läuft – beobachten Sie die Echos im Zeitdiagramm.";
         animationFrame = requestAnimationFrame(animatePing);
       }
 
@@ -429,7 +431,7 @@
         } else {
           animationFrame = null;
           pingActive = false;
-          status.textContent = "Ping complete — adjust a setting or send another ping.";
+          status.textContent = "Ping abgeschlossen – passen Sie eine Einstellung an oder senden Sie einen weiteren Ping.";
           drawScene(pingEndTimeMs);
           drawWaveform(pingEndTimeMs);
         }
@@ -482,9 +484,9 @@
         ctx.fillStyle = "rgb(255 255 255 / 76%)";
         ctx.font = "800 10px Aptos, sans-serif";
         ctx.textAlign = "left";
-        ctx.fillText("WATER COLUMN", 14, 20);
+        ctx.fillText("WASSERSÄULE", 14, 20);
         ctx.fillStyle = "#edf2e8";
-        ctx.fillText("SEAFLOOR", 14, Math.min(floorY + 19, height - 7));
+        ctx.fillText("MEERESBODEN", 14, Math.min(floorY + 19, height - 7));
 
         const origin = { x: sx(SOURCE), y: sy(SOURCE) };
         const paths = pingActive ? pingPaths : buildPaths();
@@ -554,7 +556,7 @@
             ctx.fillStyle = "#315b4c";
             ctx.font = "700 10px Aptos, sans-serif";
             ctx.textAlign = end.x > width * .72 ? "right" : "left";
-            ctx.fillText(`OBJECT ${objectIndex + 1} · ${Math.round(object.reflectivity * 100)}%`, end.x + (end.x > width * .72 ? -14 : 14), end.y - 13);
+            ctx.fillText(`OBJEKT ${objectIndex + 1} · ${Math.round(object.reflectivity * 100)} %`, end.x + (end.x > width * .72 ? -14 : 14), end.y - 13);
             ctx.restore();
           });
         }
@@ -604,12 +606,12 @@
         ctx.fillStyle = "#315b4c";
         ctx.font = "800 10px Aptos, sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText("TRANSDUCER", origin.x, origin.y - 15);
+        ctx.fillText("SCHALLWANDLER", origin.x, origin.y - 15);
         if (placementMode !== null) {
           ctx.fillStyle = "rgb(31 77 63 / 88%)";
           ctx.font = "700 11px Aptos, sans-serif";
           ctx.textAlign = "center";
-          ctx.fillText(placementMode === "add" ? "CLICK TO ADD OBJECT" : "CLICK TO MOVE OBJECT", width / 2, 22);
+          ctx.fillText(placementMode === "add" ? "KLICKEN, UM OBJEKT HINZUZUFÜGEN" : "KLICKEN, UM OBJEKT ZU VERSCHIEBEN", width / 2, 22);
         }
       }
 
@@ -665,7 +667,7 @@
         }
         ctx.font = "9px Aptos, sans-serif";
         ctx.textBaseline = "bottom";
-        ctx.fillText("TIME (MS)", (left + right) / 2, height - 1);
+        ctx.fillText("ZEIT (MS)", (left + right) / 2, height - 1);
         ctx.save();
         ctx.translate(12, center);
         ctx.rotate(-Math.PI / 2);
@@ -678,7 +680,7 @@
           ctx.font = "12px Aptos, sans-serif";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
-          ctx.fillText("Send a ping to display the received waveform", (left + right) / 2, center);
+          ctx.fillText("Senden Sie einen Ping, um das empfangene Signal anzuzeigen.", (left + right) / 2, center);
           return;
         }
 
@@ -721,11 +723,11 @@
         const hasSelection = selected !== undefined;
         if (hasSelection) {
           reflectivityInput.value = String(Math.round(selected.reflectivity * 100));
-          reflectivityValue.value = `${reflectivityInput.value}%`;
-          reflectivityLabel.textContent = `Object ${selectedObjectIndex + 1} reflection`;
+          reflectivityValue.value = `${reflectivityInput.value} %`;
+          reflectivityLabel.textContent = `Reflexion von Objekt ${selectedObjectIndex + 1}`;
         } else {
           reflectivityValue.value = "—";
-          reflectivityLabel.textContent = "Object reflection";
+          reflectivityLabel.textContent = "Objektreflexion";
         }
         reflectivityInput.disabled = !objectEnabled.checked || !hasSelection;
         addObjectButton.disabled = !objectEnabled.checked;
@@ -738,18 +740,18 @@
         const adding = mode === "add";
         const moving = mode === "move";
         addObjectButton.setAttribute("aria-pressed", String(adding));
-        addObjectButton.textContent = adding ? "Done" : "Add";
-        addObjectButton.setAttribute("aria-label", adding ? "Finish adding objects" : "Add an object");
-        addObjectButton.title = adding ? "Finish adding objects" : "Add an object";
+        addObjectButton.textContent = adding ? "Fertig" : "Hinzufügen";
+        addObjectButton.setAttribute("aria-label", adding ? "Hinzufügen beenden" : "Objekt hinzufügen");
+        addObjectButton.title = adding ? "Hinzufügen beenden" : "Objekt hinzufügen";
         moveObjectButton.setAttribute("aria-pressed", String(moving));
         scene.classList.toggle("placing", mode !== null);
         objectHint.textContent = adding
-          ? "Click the water to add objects; select Done when finished."
+          ? "Klicken Sie ins Wasser, um Objekte hinzuzufügen. Mit „Fertig“ beenden."
           : moving
-            ? `Click the water to move Object ${selectedObjectIndex + 1}.`
+            ? `Klicken Sie ins Wasser, um Objekt ${selectedObjectIndex + 1} zu verschieben.`
             : selectedObjectIndex >= 0
-              ? `Object ${selectedObjectIndex + 1} selected. Adjust its reflection or add another.`
-              : "Select an object to adjust its reflection, or add one.";
+              ? `Objekt ${selectedObjectIndex + 1} ausgewählt. Reflexion anpassen oder weiteres Objekt hinzufügen.`
+              : "Objekt auswählen, um seine Reflexion anzupassen, oder ein weiteres hinzufügen.";
         updateObjectControls();
         drawScene(pingActive ? getCurrentTimeMs() : TIME_WINDOW_MS);
       }
@@ -763,10 +765,10 @@
       }
 
       function refreshSettings() {
-        document.querySelector("#periods-value").value = `${periodsInput.value} ${Number(periodsInput.value) === 1 ? "cycle" : "cycles"}`;
-        document.querySelector("#frequency-value").value = `${Number(frequencyInput.value).toFixed(1)} kHz`;
+        document.querySelector("#periods-value").value = `${periodsInput.value} ${Number(periodsInput.value) === 1 ? "Periode" : "Perioden"}`;
+        document.querySelector("#frequency-value").value = `${germanDecimal.format(Number(frequencyInput.value))} kHz`;
         document.querySelector("#depth-value").value = `${depthInput.value} m`;
-        document.querySelector("#sound-speed-value").value = `${soundSpeedInput.value} m/s`;
+        document.querySelector("#sound-speed-value").value = `${germanInteger.format(Number(soundSpeedInput.value))} m/s`;
         updateObjectControls();
         if (pingActive) sendPing();
         else drawScene(TIME_WINDOW_MS);
@@ -782,8 +784,8 @@
         selectedObjectIndex = objects.length ? Math.min(selectedObjectIndex, objects.length - 1) : -1;
         setPlacementMode(null);
         status.textContent = objects.length
-          ? `Object deleted. Object ${selectedObjectIndex + 1} is selected.`
-          : "Object deleted. Add an object or use the seafloor reflector.";
+          ? `Objekt gelöscht. Objekt ${selectedObjectIndex + 1} ist ausgewählt.`
+          : "Objekt gelöscht. Fügen Sie ein Objekt hinzu oder verwenden Sie den Meeresbodenreflektor.";
       });
       reflectivityInput.addEventListener("input", () => {
         const selected = objects[selectedObjectIndex];
@@ -802,14 +804,14 @@
           selectedObjectIndex = objects.length - 1;
           updateObjectControls();
           drawScene(pingActive ? getCurrentTimeMs() : TIME_WINDOW_MS);
-          status.textContent = `Object ${selectedObjectIndex + 1} added. Send a ping to measure its reflection.`;
+          status.textContent = `Objekt ${selectedObjectIndex + 1} hinzugefügt. Senden Sie einen Ping, um sein Echo zu messen.`;
           return;
         }
         if (placementMode === "move") {
           if (selectedObjectIndex < 0) return;
           objects[selectedObjectIndex] = { ...objects[selectedObjectIndex], x, y };
           setPlacementMode(null);
-          status.textContent = `Object ${selectedObjectIndex + 1} moved. Send a ping to measure its reflection.`;
+          status.textContent = `Objekt ${selectedObjectIndex + 1} verschoben. Senden Sie einen Ping, um sein Echo zu messen.`;
           return;
         }
 
@@ -827,7 +829,9 @@
         selectedObjectIndex = closestObjectIndex;
         setPlacementMode(null);
         if (selectedObjectIndex >= 0) {
-          status.textContent = `Object ${selectedObjectIndex + 1} selected. Adjust its reflection strength.`;
+          status.textContent = `Objekt ${selectedObjectIndex + 1} ausgewählt. Passen Sie die Reflexionsstärke an.`;
+        } else {
+          status.textContent = "Kein Objekt ausgewählt. Fügen Sie ein Objekt hinzu oder verwenden Sie den Meeresbodenreflektor.";
         }
       });
 
@@ -838,8 +842,8 @@
         if (!objectEnabled.checked) setPlacementMode(null);
         refreshSettings();
         status.textContent = objectEnabled.checked
-          ? "Object reflectors enabled. Send a ping to include their echoes."
-          : "Object reflectors disabled. Only the seafloor echo will be received.";
+          ? "Objektreflektoren aktiviert. Senden Sie einen Ping, um ihre Echos einzubeziehen."
+          : "Objektreflektoren deaktiviert. Es wird nur das Echo des Meeresbodens empfangen.";
       });
       document.querySelector("#send-ping").addEventListener("click", sendPing);
       document.querySelector("#reset").addEventListener("click", () => {
@@ -864,7 +868,7 @@
         setPlacementMode(null);
         refreshSettings();
         drawWaveform();
-        status.textContent = "Simulation reset. Set the pulse and reflectors, then send a ping.";
+        status.textContent = "Simulation zurückgesetzt. Stellen Sie den Impuls und die Reflektoren ein und senden Sie einen Ping.";
       });
 
       window.addEventListener("resize", () => {
