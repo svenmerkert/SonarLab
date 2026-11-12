@@ -346,8 +346,8 @@
           </div>
           <div class="range-setting">
             <div class="range-heading"><label for="range-count">Anzahl der Entfernungspunkte</label><output class="range-value" id="range-value" for="range-count">301</output></div>
-            <input id="range-count" type="range" min="1" max="10001" value="301" step="1">
-            <div class="range-bounds"><span>1</span><span>10001</span></div>
+            <input id="range-count" type="range" min="1" max="1000" value="301" step="1">
+            <div class="range-bounds"><span>1</span><span>1000</span></div>
           </div>
           <div class="check-list">
             <label class="check-row"><input id="attenuation" type="checkbox" checked><span>Entfernungsdämpfung</span></label>
@@ -396,6 +396,7 @@
       const WORLD_WIDTH = 1000;
       const WORLD_HEIGHT = 500;
       const MAX_RANGE = 1000;
+      const MAX_SEAFLOOR_SPACING_DISTANCE = 5000;
       const MIN_SIGNAL_DB = -80;
       const SEAFLOOR_Y = 405;
       const SONAR_ORIGIN = { x: 72, y: 72 };
@@ -613,10 +614,15 @@
         const signal = new Array(options.rangeCount).fill(0);
         const rays = [];
         const depth = SEAFLOOR_Y - SONAR_ORIGIN.y;
-        let floorDistanceLimit = Math.min(MAX_RANGE, Math.hypot(WORLD_WIDTH - SONAR_ORIGIN.x, depth));
         const endAngle = Math.max(90 - options.beamWidth, 0) * Math.PI / 180;
-        if (endAngle > 1e-9) floorDistanceLimit = Math.min(floorDistanceLimit, depth / Math.sin(endAngle));
-        const floorXLimit = SONAR_ORIGIN.x + Math.sqrt(Math.max(floorDistanceLimit ** 2 - depth ** 2, 0));
+        let floorXLimit = SONAR_ORIGIN.x + MAX_SEAFLOOR_SPACING_DISTANCE;
+        if (endAngle > 1e-9) {
+          const floorDistanceLimit = depth / Math.sin(endAngle);
+          floorXLimit = Math.min(
+            floorXLimit,
+            SONAR_ORIGIN.x + Math.sqrt(Math.max(floorDistanceLimit ** 2 - depth ** 2, 0))
+          );
+        }
 
         for (let rayIndex = 0; rayIndex < options.rayCount; rayIndex++) {
           const fraction = rayIndex / Math.max(options.rayCount - 1, 1);
