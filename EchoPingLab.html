@@ -274,6 +274,7 @@
       const TIME_WINDOW_MS = 48;
       const SAMPLE_COUNT = 1800;
       const ANIMATION_DURATION_MS = 5200;
+      const EXIT_MARGIN_METERS = 0.1;
       const FLOOR_Y = 0.78;
       const SOURCE = { x: 0.5, y: 0.15 };
       const INITIAL_OBJECT = { x: 0.69, y: 0.59 };
@@ -296,6 +297,8 @@
       let pingActive = false;
       let simulatedElapsedMs = 0;
       let lastFrameAt = null;
+      let outgoingEndTimeMs = TIME_WINDOW_MS;
+      let pingEndTimeMs = TIME_WINDOW_MS;
       let echoSamples = [];
       let pingPaths = [];
 
@@ -357,8 +360,39 @@
         });
       }
 
+      function updatePropagationEndTimes(paths) {
+        const bounds = scene.getBoundingClientRect();
+        const width = Math.max(bounds.width, 1);
+        const height = Math.max(bounds.height, 1);
+        const depthMeters = Number(depthInput.value);
+        const soundSpeed = Number(soundSpeedInput.value);
+        const pixelsPerMeterX = width * (FLOOR_Y - SOURCE.y) / depthMeters;
+        const pixelsPerMeterY = height * (FLOOR_Y - SOURCE.y) / depthMeters;
+        const sourceX = SOURCE.x * width;
+        const sourceY = SOURCE.y * height;
+        const floorY = FLOOR_Y * height;
+        const cycles = Number(periodsInput.value);
+        const wavelengthMeters = soundSpeed / (Number(frequencyInput.value) * 1000);
+        const trailingLengthMeters = (cycles - 1) * wavelengthMeters + EXIT_MARGIN_METERS;
+        const outgoingExitDistance = Math.max(...[0, width].map(x =>
+          Math.hypot((x - sourceX) / pixelsPerMeterX, (floorY - sourceY) / pixelsPerMeterY)
+        ));
+        outgoingEndTimeMs = (outgoingExitDistance + trailingLengthMeters) / soundSpeed * 1000;
+
+        const returnEndTimes = paths.filter(path => path.reflection > 0).map(path => {
+          const targetX = path.end.x * width;
+          const targetY = path.end.y * height;
+          const exitDistance = Math.max(...[0, width].map(x =>
+            Math.hypot((x - targetX) / pixelsPerMeterX, targetY / pixelsPerMeterY)
+          ));
+          return path.oneWayDelay + (exitDistance + trailingLengthMeters) / soundSpeed * 1000;
+        });
+        pingEndTimeMs = Math.max(TIME_WINDOW_MS, outgoingEndTimeMs, ...returnEndTimes);
+      }
+
       function sendPing() {
         pingPaths = buildPaths();
+        updatePropagationEndTimes(pingPaths);
         echoSamples = makeEchoSamples(pingPaths);
         simulatedElapsedMs = 0;
         lastFrameAt = null;
@@ -371,17 +405,18 @@
       function animatePing(now) {
         if (lastFrameAt !== null) simulatedElapsedMs += (now - lastFrameAt) * Number(animationSpeedInput.value);
         lastFrameAt = now;
-        const timeMs = Math.min(simulatedElapsedMs / ANIMATION_DURATION_MS * TIME_WINDOW_MS, TIME_WINDOW_MS);
+        const timeMs = Math.min(simulatedElapsedMs / ANIMATION_DURATION_MS * TIME_WINDOW_MS, pingEndTimeMs);
+        const animationEndMs = ANIMATION_DURATION_MS * pingEndTimeMs / TIME_WINDOW_MS;
         drawScene(timeMs);
         drawWaveform(timeMs);
-        if (simulatedElapsedMs < ANIMATION_DURATION_MS) {
+        if (simulatedElapsedMs < animationEndMs) {
           animationFrame = requestAnimationFrame(animatePing);
         } else {
           animationFrame = null;
           pingActive = false;
           status.textContent = "Ping complete — adjust a setting or send another ping.";
-          drawScene(TIME_WINDOW_MS);
-          drawWaveform(TIME_WINDOW_MS);
+          drawScene(pingEndTimeMs);
+          drawWaveform(pingEndTimeMs);
         }
       }
 
@@ -442,7 +477,7 @@
         const pixelsPerMeterX = width * (FLOOR_Y - SOURCE.y) / Number(depthInput.value);
         const pixelsPerMeterY = height * (FLOOR_Y - SOURCE.y) / Number(depthInput.value);
         const wavelengthMeters = soundSpeed / (Number(frequencyInput.value) * 1000);
-        const drawWavePacket = (center, radiusMeters, startAngle, endAngle, color, alpha, maxRadiusMeters = Infinity) => {
+        const drawWavePacket = (center, radiusMeters, startAngle, endAngle, color, alpha) => {
           ctx.save();
           ctx.beginPath();
           ctx.rect(0, 0, width, floorY);
@@ -453,7 +488,6 @@
           for (let cycle = 0; cycle < Number(periodsInput.value); cycle++) {
             const waveRadiusMeters = radiusMeters - cycle * wavelengthMeters;
             if (waveRadiusMeters <= 0) break;
-            if (waveRadiusMeters > maxRadiusMeters) continue;
             ctx.beginPath();
             ctx.ellipse(
               center.x,
@@ -506,26 +540,22 @@
         });
 
         if (pingActive) {
-          const outboundDuration = Math.max(...pingPaths.map(path => path.oneWayDelay));
-          if (timeMs <= outboundDuration) {
+          if (timeMs <= outgoingEndTimeMs) {
             drawWavePacket(origin, soundSpeed * timeMs / 1000, 0, Math.PI, "#c56c45", .72);
           }
 
           const pulseDurationMs = Number(periodsInput.value) / Number(frequencyInput.value);
-          const pulsePeriodMs = 1 / Number(frequencyInput.value);
           pingPaths.forEach(path => {
             const end = { x: sx(path.end), y: sy(path.end) };
             const timeSinceImpact = timeMs - path.oneWayDelay;
-            const lastArrivalTimeMs = path.delay + (Number(periodsInput.value) - 1) * pulsePeriodMs;
-            if (timeMs >= path.oneWayDelay && timeMs <= lastArrivalTimeMs) {
+            if (timeMs >= path.oneWayDelay) {
               drawWavePacket(
                 end,
                 soundSpeed * timeSinceImpact / 1000,
                 Math.PI,
                 Math.PI * 2,
                 path.kind === "object" ? "#3d927b" : "#c56c45",
-                path.reflection,
-                path.distance
+                path.reflection
               );
             }
             const impactDurationMs = Math.max(pulseDurationMs * 2, 1.5);
@@ -653,7 +683,8 @@
         plotEcho(0, SAMPLE_COUNT - 1, "#d5a580", .27);
         if (activeIndex > 0) plotEcho(0, activeIndex, "#f3a06f", 1);
         if (pingActive) {
-          const cursorX = left + timeMs / TIME_WINDOW_MS * (right - left);
+          const cursorTimeMs = Math.min(timeMs, TIME_WINDOW_MS);
+          const cursorX = left + cursorTimeMs / TIME_WINDOW_MS * (right - left);
           ctx.strokeStyle = "rgb(255 255 255 / 65%)";
           ctx.lineWidth = 1;
           ctx.setLineDash([3, 4]);
@@ -681,7 +712,7 @@
         const pendingElapsed = lastFrameAt === null
           ? 0
           : (performance.now() - lastFrameAt) * Number(animationSpeedInput.value);
-        return Math.min((simulatedElapsedMs + pendingElapsed) / ANIMATION_DURATION_MS * TIME_WINDOW_MS, TIME_WINDOW_MS);
+        return Math.min((simulatedElapsedMs + pendingElapsed) / ANIMATION_DURATION_MS * TIME_WINDOW_MS, pingEndTimeMs);
       }
 
       function refreshSettings() {
@@ -723,6 +754,8 @@
         pingActive = false;
         simulatedElapsedMs = 0;
         lastFrameAt = null;
+        outgoingEndTimeMs = TIME_WINDOW_MS;
+        pingEndTimeMs = TIME_WINDOW_MS;
         echoSamples = [];
         pingPaths = [];
         objectPosition = { ...INITIAL_OBJECT };
@@ -740,6 +773,7 @@
       });
 
       window.addEventListener("resize", () => {
+        if (pingActive) updatePropagationEndTimes(pingPaths);
         drawScene(pingActive ? getCurrentTimeMs() : TIME_WINDOW_MS);
         drawWaveform(pingActive ? getCurrentTimeMs() : TIME_WINDOW_MS);
       });
