@@ -442,7 +442,7 @@
         const pixelsPerMeterX = width * (FLOOR_Y - SOURCE.y) / Number(depthInput.value);
         const pixelsPerMeterY = height * (FLOOR_Y - SOURCE.y) / Number(depthInput.value);
         const wavelengthMeters = soundSpeed / (Number(frequencyInput.value) * 1000);
-        const drawWavePacket = (center, radiusMeters, startAngle, endAngle, color, alpha) => {
+        const drawWavePacket = (center, radiusMeters, startAngle, endAngle, color, alpha, maxRadiusMeters = Infinity) => {
           ctx.save();
           ctx.beginPath();
           ctx.rect(0, 0, width, floorY);
@@ -453,6 +453,7 @@
           for (let cycle = 0; cycle < Number(periodsInput.value); cycle++) {
             const waveRadiusMeters = radiusMeters - cycle * wavelengthMeters;
             if (waveRadiusMeters <= 0) break;
+            if (waveRadiusMeters > maxRadiusMeters) continue;
             ctx.beginPath();
             ctx.ellipse(
               center.x,
@@ -468,13 +469,6 @@
           ctx.restore();
         };
 
-        if (pingActive) {
-          const outboundDuration = Math.max(...paths.map(path => path.oneWayDelay));
-          if (timeMs <= outboundDuration) {
-            drawWavePacket(origin, soundSpeed * timeMs / 1000, 0, Math.PI, "#c56c45", .72);
-          }
-        }
-
         paths.forEach(path => {
           const end = { x: sx(path.end), y: sy(path.end) };
           const isObject = path.kind === "object";
@@ -489,27 +483,6 @@
           ctx.lineTo(origin.x, origin.y);
           ctx.stroke();
           ctx.restore();
-
-          if (pingActive) {
-            const delay = Math.max(path.delay, 0.01);
-            if (timeMs >= path.oneWayDelay && timeMs <= delay) {
-              const returnTimeMs = timeMs - path.oneWayDelay;
-              drawWavePacket(end, soundSpeed * returnTimeMs / 1000, Math.PI, Math.PI * 2, color, path.reflection);
-            }
-            const pulseDurationMs = Number(periodsInput.value) / Number(frequencyInput.value);
-            const timeSinceImpact = timeMs - path.oneWayDelay;
-            if (path.reflection > 0 && timeSinceImpact >= 0 && timeSinceImpact < pulseDurationMs) {
-              const fade = 1 - timeSinceImpact / pulseDurationMs;
-              ctx.save();
-              ctx.globalAlpha = fade;
-              ctx.strokeStyle = color;
-              ctx.lineWidth = 2;
-              ctx.beginPath();
-              ctx.arc(end.x, end.y, 12 + (1 - fade) * 8, 0, Math.PI * 2);
-              ctx.stroke();
-              ctx.restore();
-            }
-          }
 
           if (isObject) {
             ctx.save();
@@ -531,6 +504,44 @@
             ctx.restore();
           }
         });
+
+        if (pingActive) {
+          const outboundDuration = Math.max(...pingPaths.map(path => path.oneWayDelay));
+          if (timeMs <= outboundDuration) {
+            drawWavePacket(origin, soundSpeed * timeMs / 1000, 0, Math.PI, "#c56c45", .72);
+          }
+
+          const pulseDurationMs = Number(periodsInput.value) / Number(frequencyInput.value);
+          const pulsePeriodMs = 1 / Number(frequencyInput.value);
+          pingPaths.forEach(path => {
+            const end = { x: sx(path.end), y: sy(path.end) };
+            const timeSinceImpact = timeMs - path.oneWayDelay;
+            const lastArrivalTimeMs = path.delay + (Number(periodsInput.value) - 1) * pulsePeriodMs;
+            if (timeMs >= path.oneWayDelay && timeMs <= lastArrivalTimeMs) {
+              drawWavePacket(
+                end,
+                soundSpeed * timeSinceImpact / 1000,
+                Math.PI,
+                Math.PI * 2,
+                path.kind === "object" ? "#3d927b" : "#c56c45",
+                path.reflection,
+                path.distance
+              );
+            }
+            const impactDurationMs = Math.max(pulseDurationMs * 2, 1.5);
+            if (path.reflection > 0 && timeSinceImpact >= 0 && timeSinceImpact < impactDurationMs) {
+              const fade = 1 - timeSinceImpact / impactDurationMs;
+              ctx.save();
+              ctx.globalAlpha = fade;
+              ctx.strokeStyle = path.kind === "object" ? "#3d927b" : "#c56c45";
+              ctx.lineWidth = 2;
+              ctx.beginPath();
+              ctx.arc(end.x, end.y, 15 + (1 - fade) * 12, 0, Math.PI * 2);
+              ctx.stroke();
+              ctx.restore();
+            }
+          });
+        }
 
         ctx.fillStyle = "#17443b";
         ctx.beginPath();
