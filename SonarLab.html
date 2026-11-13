@@ -432,19 +432,19 @@
       const WORLD_HEIGHT = 500;
       const MAX_HISTORY_SHOTS = 1000;
       const DEFAULT_MAX_RANGE_M = 100;
-      const VISUAL_SCALE = 10;
-      let MAX_RANGE = DEFAULT_MAX_RANGE_M * VISUAL_SCALE;
       const MAX_SEAFLOOR_SPACING_DISTANCE = 5000;
       const MIN_SIGNAL_DB = -80;
       const MIN_WATER_DEPTH_M = 3;
       const MAX_WATER_DEPTH_M = 20;
       const DEFAULT_WATER_DEPTH_M = 15;
+      const HORIZONTAL_SCALE = WORLD_WIDTH / 100;
+      const WATERLINE_Y = WORLD_HEIGHT * 0.09;
+      const VERTICAL_SCALE = (WORLD_HEIGHT * 0.95 - WATERLINE_Y) / MAX_WATER_DEPTH_M;
+      let MAX_RANGE = DEFAULT_MAX_RANGE_M;
       const SONAR_ORIGIN = { x: 72, y: 72 };
       let SEAFLOOR_Y = 0;
       function depthToSeafloorY(depthMeters) {
-        const maximumFloorY = WORLD_HEIGHT * 0.95;
-        const depthFraction = Number(depthMeters) / MAX_WATER_DEPTH_M;
-        return SONAR_ORIGIN.y + depthFraction * (maximumFloorY - SONAR_ORIGIN.y);
+        return WATERLINE_Y + Number(depthMeters) * VERTICAL_SCALE;
       }
       SEAFLOOR_Y = depthToSeafloorY(DEFAULT_WATER_DEPTH_M);
       const COLORS = {
@@ -611,7 +611,10 @@
 
       function traceRay(angleDegrees, sceneTargets) {
         const angle = angleDegrees * Math.PI / 180;
-        const direction = { x: Math.cos(angle), y: Math.sin(angle) };
+        const direction = {
+          x: Math.cos(angle) * HORIZONTAL_SCALE,
+          y: Math.sin(angle) * VERTICAL_SCALE
+        };
         const origin = SONAR_ORIGIN;
         let limit = Math.min(
           direction.x > 0 ? (WORLD_WIDTH - origin.x) / direction.x : Infinity,
@@ -677,14 +680,14 @@
       function simulatePing(sceneTargets, options) {
         const signal = new Array(options.rangeCount).fill(0);
         const rays = [];
-        const depth = Number(depthInput.value || DEFAULT_WATER_DEPTH_M);
+        const depth = (SEAFLOOR_Y - SONAR_ORIGIN.y) / VERTICAL_SCALE;
         const endAngle = Math.max(90 - options.beamWidth, 0) * Math.PI / 180;
         let floorXLimit = SONAR_ORIGIN.x + MAX_SEAFLOOR_SPACING_DISTANCE;
         if (endAngle > 1e-9) {
           const floorDistanceLimit = depth / Math.sin(endAngle);
           floorXLimit = Math.min(
             floorXLimit,
-            SONAR_ORIGIN.x + Math.sqrt(Math.max(floorDistanceLimit ** 2 - depth ** 2, 0))
+            SONAR_ORIGIN.x + Math.sqrt(Math.max(floorDistanceLimit ** 2 - depth ** 2, 0)) * HORIZONTAL_SCALE
           );
         }
 
@@ -693,7 +696,7 @@
           let angle;
           if (options.uniformSeafloorSpacing) {
             const floorX = SONAR_ORIGIN.x + fraction * (floorXLimit - SONAR_ORIGIN.x);
-            angle = Math.atan2(depth, Math.max(floorX - SONAR_ORIGIN.x, 1e-9)) * 180 / Math.PI;
+            angle = Math.atan2(depth, Math.max((floorX - SONAR_ORIGIN.x) / HORIZONTAL_SCALE, 1e-9)) * 180 / Math.PI;
           } else {
             angle = 90 - fraction * options.beamWidth;
           }
@@ -797,7 +800,7 @@
       function applyMaxRange(rangeMeters) {
         const clampedRange = Math.min(100, Math.max(3, Number(rangeMeters) || DEFAULT_MAX_RANGE_M));
         maxRangeInput.value = String(clampedRange);
-        MAX_RANGE = clampedRange * VISUAL_SCALE;
+        MAX_RANGE = clampedRange;
         updateMaxRangeDisplay();
       }
 
@@ -810,7 +813,7 @@
         ctx.fillStyle = "#dcebe8";
         ctx.fillRect(0, 0, size.width, size.height);
 
-        const waterlineY = Math.min(30, Math.max(18, 0.09 * size.height));
+        const waterlineY = WATERLINE_Y * sy;
         ctx.save();
         ctx.setLineDash([8, 7]);
         ctx.strokeStyle = "rgba(84, 118, 127, 0.8)";
