@@ -387,7 +387,7 @@
         <section class="panel scene-panel" aria-labelledby="scene-title">
           <div class="panel-head">
             <h2 class="panel-title" id="scene-title">QUERSCHNITTSANSICHT</h2>
-            <span class="panel-detail">SZENENBREITE 100 M · AUSGEWÄHLTES OBJEKT MARKIERT</span>
+            <span class="panel-detail" id="scene-width-detail">GLEICHE METERSKALA</span>
           </div>
           <div class="scene-wrap"><canvas id="scene" aria-label="Interaktiver Sonar-Szeneneditor"></canvas></div>
         </section>
@@ -437,7 +437,7 @@
       const MIN_WATER_DEPTH_M = 3;
       const MAX_WATER_DEPTH_M = 20;
       const DEFAULT_WATER_DEPTH_M = 15;
-      const HORIZONTAL_SCALE = WORLD_WIDTH / 100;
+      let HORIZONTAL_SCALE = WORLD_WIDTH / 100;
       const WATERLINE_Y = WORLD_HEIGHT * 0.09;
       const VERTICAL_SCALE = (WORLD_HEIGHT * 0.95 - WATERLINE_Y) / MAX_WATER_DEPTH_M;
       let MAX_RANGE = DEFAULT_MAX_RANGE_M;
@@ -467,6 +467,7 @@
       ];
 
       const scene = document.querySelector("#scene");
+      const sceneWidthDetail = document.querySelector("#scene-width-detail");
       const plot = document.querySelector("#plot");
       const historyCanvas = document.querySelector("#history");
       const sceneContext = scene.getContext("2d");
@@ -514,6 +515,14 @@
         }
         context.setTransform(ratio, 0, 0, ratio, 0, 0);
         return { width: bounds.width, height: bounds.height };
+      }
+
+      function updateSceneScale(size) {
+        const pixelsPerWorldX = Math.max(size.width, 1) / WORLD_WIDTH;
+        const pixelsPerWorldY = Math.max(size.height, 1) / WORLD_HEIGHT;
+        HORIZONTAL_SCALE = VERTICAL_SCALE * pixelsPerWorldY / pixelsPerWorldX;
+        const sceneWidthMeters = WORLD_WIDTH / HORIZONTAL_SCALE;
+        sceneWidthDetail.textContent = `GLEICHE METERSKALA · ${Math.round(sceneWidthMeters)} M BREITE`;
       }
 
       function rayEllipseDistance(origin, direction, center, radiusX, radiusY) {
@@ -726,6 +735,7 @@
       }
 
       function sendPing() {
+        updateSceneScale(resizeCanvas(scene, sceneContext));
         applyWaterDepth(depthInput.value);
         applyMaxRange(maxRangeInput.value);
         lastPingMaxRangeMeters = Number(maxRangeInput.value);
@@ -806,6 +816,7 @@
 
       function drawScene() {
         const size = resizeCanvas(scene, sceneContext);
+        updateSceneScale(size);
         const ctx = sceneContext;
         const sx = size.width / WORLD_WIDTH;
         const sy = size.height / WORLD_HEIGHT;
