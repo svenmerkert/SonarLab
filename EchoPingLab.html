@@ -104,6 +104,13 @@
     .legend-item { display: inline-flex; align-items: center; gap: 6px; color: #66776f; font-size: 10px; font-weight: 700; white-space: nowrap; }
     .legend-swatch { width: 17px; height: 3px; border-radius: 2px; background: var(--coral); }
     .legend-swatch.object { background: var(--mint); }
+    .legend-swatch.waterline {
+      width: 18px;
+      height: 2px;
+      border-radius: 4px;
+      background: #7aa8b4;
+      box-shadow: 0 0 0 1px rgb(122 168 180 / 30%);
+    }
     .scene-wrap, .plot-wrap { flex: 1; min-height: 0; overflow: hidden; border-radius: 4px; }
     .scene-wrap { background: #d9eae6; }
     .plot-wrap { background: var(--deep); }
@@ -252,6 +259,7 @@
           <div class="panel-head">
             <h2 class="panel-title" id="scene-title">01 &nbsp; IMPULSAUSBREITUNG</h2>
             <div class="legend" aria-label="Echo-Legende">
+              <span class="legend-item"><span class="legend-swatch waterline"></span>WASSERLINIE</span>
               <span class="legend-item"><span class="legend-swatch"></span>MEERESBODEN</span>
               <span class="legend-item"><span class="legend-swatch object"></span>OBJEKT</span>
             </div>
@@ -452,6 +460,23 @@
         water.addColorStop(1, "#c8e0db");
         ctx.fillStyle = water;
         ctx.fillRect(0, 0, width, floorY);
+
+        const waterlineY = Math.min(26, Math.max(14, height * 0.06));
+        ctx.save();
+        ctx.strokeStyle = "rgba(76, 118, 128, 0.72)";
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([8, 8]);
+        ctx.beginPath();
+        ctx.moveTo(0, waterlineY);
+        ctx.lineTo(width, waterlineY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = "rgba(28, 62, 68, 0.8)";
+        ctx.font = "800 10px Aptos, sans-serif";
+        ctx.textAlign = "right";
+        ctx.fillText("WASSERLINIE", width - 12, waterlineY - 8);
+        ctx.restore();
+
         ctx.save();
         ctx.strokeStyle = "rgb(100 148 135 / 13%)";
         ctx.lineWidth = 1;

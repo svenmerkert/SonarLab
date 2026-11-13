@@ -352,14 +352,24 @@
             <div class="range-bounds"><span>0°</span><span>90°</span></div>
           </div>
           <div class="range-setting">
-            <div class="range-heading"><label for="ray-count">Anzahl der Strahlen</label><output class="range-value" id="ray-value" for="ray-count">121</output></div>
-            <input id="ray-count" type="range" min="31" max="10001" value="121" step="2">
+            <div class="range-heading"><label for="ray-count">Anzahl der Strahlen</label><output class="range-value" id="ray-value" for="ray-count">10001</output></div>
+            <input id="ray-count" type="range" min="31" max="10001" value="10001" step="2">
             <div class="range-bounds"><span>31</span><span>10001</span></div>
           </div>
           <div class="range-setting">
             <div class="range-heading"><label for="range-count">Anzahl der Entfernungspunkte</label><output class="range-value" id="range-value" for="range-count">301</output></div>
             <input id="range-count" type="range" min="1" max="1000" value="301" step="1">
             <div class="range-bounds"><span>1</span><span>1000</span></div>
+          </div>
+          <div class="range-setting">
+            <div class="range-heading"><label for="water-depth">Wassertiefe</label><output class="range-value" id="water-depth-value" for="water-depth">15 m</output></div>
+            <input id="water-depth" type="range" min="3" max="20" value="15" step="1">
+            <div class="range-bounds"><span>3 m</span><span>20 m</span></div>
+          </div>
+          <div class="range-setting">
+            <div class="range-heading"><label for="max-range">Max. Schrägentfernung</label><output class="range-value" id="max-range-value" for="max-range">100 m</output></div>
+            <input id="max-range" type="range" min="3" max="100" value="100" step="1">
+            <div class="range-bounds"><span>3 m</span><span>100 m</span></div>
           </div>
           <div class="check-list">
             <label class="check-row"><input id="attenuation" type="checkbox" checked><span>Entfernungsdämpfung</span></label>
@@ -377,7 +387,7 @@
         <section class="panel scene-panel" aria-labelledby="scene-title">
           <div class="panel-head">
             <h2 class="panel-title" id="scene-title">QUERSCHNITTSANSICHT</h2>
-            <span class="panel-detail">AUSGEWÄHLTES OBJEKT MARKIERT</span>
+            <span class="panel-detail">SZENENBREITE 100 M · AUSGEWÄHLTES OBJEKT MARKIERT</span>
           </div>
           <div class="scene-wrap"><canvas id="scene" aria-label="Interaktiver Sonar-Szeneneditor"></canvas></div>
         </section>
@@ -420,12 +430,23 @@
 
       const WORLD_WIDTH = 1000;
       const WORLD_HEIGHT = 500;
-      const MAX_RANGE = 1000;
       const MAX_HISTORY_SHOTS = 1000;
+      const DEFAULT_MAX_RANGE_M = 100;
+      const VISUAL_SCALE = 10;
+      let MAX_RANGE = DEFAULT_MAX_RANGE_M * VISUAL_SCALE;
       const MAX_SEAFLOOR_SPACING_DISTANCE = 5000;
       const MIN_SIGNAL_DB = -80;
-      const SEAFLOOR_Y = 405;
+      const MIN_WATER_DEPTH_M = 3;
+      const MAX_WATER_DEPTH_M = 20;
+      const DEFAULT_WATER_DEPTH_M = 15;
       const SONAR_ORIGIN = { x: 72, y: 72 };
+      let SEAFLOOR_Y = 0;
+      function depthToSeafloorY(depthMeters) {
+        const maximumFloorY = WORLD_HEIGHT * 0.95;
+        const depthFraction = Number(depthMeters) / MAX_WATER_DEPTH_M;
+        return SONAR_ORIGIN.y + depthFraction * (maximumFloorY - SONAR_ORIGIN.y);
+      }
+      SEAFLOOR_Y = depthToSeafloorY(DEFAULT_WATER_DEPTH_M);
       const COLORS = {
         orange: "#f49a63",
         mint: "#7fcbba",
@@ -457,6 +478,8 @@
       const rangeInput = document.querySelector("#range-count");
       const attenuationInput = document.querySelector("#attenuation");
       const equalSpacingInput = document.querySelector("#equal-spacing");
+      const depthInput = document.querySelector("#water-depth");
+      const maxRangeInput = document.querySelector("#max-range");
       const deleteButton = document.querySelector("#delete-selected");
       const historyCountInput = document.querySelector("#history-count");
       const addHistoryButton = document.querySelector("#add-history");
@@ -653,7 +676,7 @@
       function simulatePing(sceneTargets, options) {
         const signal = new Array(options.rangeCount).fill(0);
         const rays = [];
-        const depth = SEAFLOOR_Y - SONAR_ORIGIN.y;
+        const depth = Number(depthInput.value || DEFAULT_WATER_DEPTH_M);
         const endAngle = Math.max(90 - options.beamWidth, 0) * Math.PI / 180;
         let floorXLimit = SONAR_ORIGIN.x + MAX_SEAFLOOR_SPACING_DISTANCE;
         if (endAngle > 1e-9) {
@@ -699,6 +722,8 @@
       }
 
       function sendPing() {
+        applyWaterDepth(depthInput.value);
+        applyMaxRange(maxRangeInput.value);
         const options = pingOptions();
         const result = simulatePing(targets, options);
         lastSignal = result.signal;
@@ -747,6 +772,30 @@
         drawHistory();
       }
 
+      function updateDepthDisplay() {
+        const depthMeters = Number(depthInput.value) || DEFAULT_WATER_DEPTH_M;
+        document.querySelector("#water-depth-value").value = `${depthMeters} m`;
+      }
+
+      function updateMaxRangeDisplay() {
+        const rangeMeters = Number(maxRangeInput.value) || DEFAULT_MAX_RANGE_M;
+        document.querySelector("#max-range-value").value = `${rangeMeters} m`;
+      }
+
+      function applyWaterDepth(depthMeters) {
+        const clampedDepth = Math.min(MAX_WATER_DEPTH_M, Math.max(MIN_WATER_DEPTH_M, Number(depthMeters) || DEFAULT_WATER_DEPTH_M));
+        depthInput.value = String(clampedDepth);
+        SEAFLOOR_Y = depthToSeafloorY(clampedDepth);
+        updateDepthDisplay();
+      }
+
+      function applyMaxRange(rangeMeters) {
+        const clampedRange = Math.min(100, Math.max(3, Number(rangeMeters) || DEFAULT_MAX_RANGE_M));
+        maxRangeInput.value = String(clampedRange);
+        MAX_RANGE = clampedRange * VISUAL_SCALE;
+        updateMaxRangeDisplay();
+      }
+
       function drawScene() {
         const size = resizeCanvas(scene, sceneContext);
         const ctx = sceneContext;
@@ -755,6 +804,22 @@
         ctx.clearRect(0, 0, size.width, size.height);
         ctx.fillStyle = "#dcebe8";
         ctx.fillRect(0, 0, size.width, size.height);
+
+        const waterlineY = Math.min(30, Math.max(18, 0.09 * size.height));
+        ctx.save();
+        ctx.setLineDash([8, 7]);
+        ctx.strokeStyle = "rgba(84, 118, 127, 0.8)";
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(0, waterlineY);
+        ctx.lineTo(size.width, waterlineY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = "rgba(24, 52, 55, 0.8)";
+        ctx.font = "700 9px Aptos, sans-serif";
+        ctx.textAlign = "right";
+        ctx.fillText("WASSERLINIE", size.width - 10, waterlineY - 8);
+        ctx.restore();
 
         const floorY = SEAFLOOR_Y * sy;
         ctx.save();
@@ -786,7 +851,7 @@
           const ex = ray.endpoint.x * sx;
           const ey = ray.endpoint.y * sy;
           ctx.strokeStyle = ray.material ? "#d66d43" : "#89a8a0";
-          ctx.lineWidth = 1;
+          ctx.lineWidth = 1.8;
           ctx.setLineDash([]);
           ctx.beginPath();
           ctx.moveTo(ox, oy);
@@ -804,7 +869,7 @@
           if (ray.material) {
             ctx.fillStyle = "#f2a06c";
             ctx.beginPath();
-            ctx.arc(ex, ey, 2, 0, Math.PI * 2);
+            ctx.arc(ex, ey, 5, 0, Math.PI * 2);
             ctx.fill();
           }
         }
@@ -884,6 +949,7 @@
         const ctx = plotContext;
         const width = size.width;
         const height = size.height;
+        const maxRange = Number(maxRangeInput.value) || DEFAULT_MAX_RANGE_M;
         ctx.clearRect(0, 0, width, height);
         ctx.fillStyle = "#18332f";
         ctx.fillRect(0, 0, width, height);
@@ -916,8 +982,9 @@
         ctx.lineTo(left, bottom);
         ctx.lineTo(right, bottom);
         ctx.stroke();
-        for (const distance of [0, 25, 50, 75, 100]) {
-          const x = left + distance / 100 * (right - left);
+        const tickValues = [0, maxRange * 0.25, maxRange * 0.5, maxRange * 0.75, maxRange];
+        tickValues.forEach(distance => {
+          const x = left + (distance / maxRange) * (right - left);
           ctx.beginPath();
           ctx.moveTo(x, bottom);
           ctx.lineTo(x, bottom + 4);
@@ -925,8 +992,8 @@
           ctx.fillStyle = COLORS.labels;
           ctx.textAlign = "center";
           ctx.textBaseline = "top";
-          ctx.fillText(String(distance), x, bottom + 7);
-        }
+          ctx.fillText(String(Math.round(distance)), x, bottom + 7);
+        });
         ctx.fillStyle = COLORS.labels;
         ctx.font = "9px Aptos, sans-serif";
         ctx.textAlign = "center";
@@ -935,7 +1002,7 @@
 
         let hasCurve = false;
         for (const [signal, color] of [[lastSignal, COLORS.orange], [comparisonSignal, COLORS.mint]]) {
-          if (!signal || !signal.some(value => value > 0)) continue;
+          if (!signal || (!hasCurrentPing && !signal.some(value => value > 0))) continue;
           ctx.strokeStyle = color;
           ctx.lineWidth = 2;
           ctx.beginPath();
@@ -962,6 +1029,7 @@
       function drawHistory() {
         const size = resizeCanvas(historyCanvas, historyContext);
         const ctx = historyContext;
+        const maxRange = Number(maxRangeInput.value) || DEFAULT_MAX_RANGE_M;
         ctx.clearRect(0, 0, size.width, size.height);
         ctx.fillStyle = "#18332f";
         ctx.fillRect(0, 0, size.width, size.height);
@@ -1019,10 +1087,11 @@
         }
         ctx.textAlign = "center";
         ctx.textBaseline = "top";
-        for (const distance of [0, 250, 500, 750, 1000]) {
-          const x = left / ratio + distance / MAX_RANGE * (imageWidth / ratio);
-          ctx.fillText(String(distance), x, size.height - bottom / ratio + 3);
-        }
+        const tickValues = [0, maxRange * 0.25, maxRange * 0.5, maxRange * 0.75, maxRange];
+        tickValues.forEach(distance => {
+          const x = left / ratio + distance / maxRange * (imageWidth / ratio);
+          ctx.fillText(String(Math.round(distance)), x, size.height - bottom / ratio + 3);
+        });
         if (echoHistory.length === 0) {
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
@@ -1091,9 +1160,17 @@
       rangeInput.addEventListener("input", () => {
         document.querySelector("#range-value").value = rangeInput.value;
       });
+      depthInput.addEventListener("input", () => {
+        updateDepthDisplay();
+      });
+      maxRangeInput.addEventListener("input", () => {
+        updateMaxRangeDisplay();
+      });
       document.querySelector("#send-ping").addEventListener("click", sendPing);
       addHistoryButton.addEventListener("click", addCurrentEchoToHistory);
       document.querySelector("#reset-scene").addEventListener("click", () => {
+        applyWaterDepth(DEFAULT_WATER_DEPTH_M);
+        applyMaxRange(DEFAULT_MAX_RANGE_M);
         targets = initialTargets();
         selectedIndex = -1;
         updateDeleteButton();
@@ -1220,6 +1297,8 @@
         drawHistory();
       });
 
+      updateDepthDisplay();
+      updateMaxRangeDisplay();
       drawScene();
       drawPlot();
       drawHistory();
