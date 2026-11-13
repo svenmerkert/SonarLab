@@ -501,6 +501,7 @@
       let lastRays = [];
       let echoHistory = [];
       let hasCurrentPing = false;
+      let lastPingMaxRangeMeters = DEFAULT_MAX_RANGE_M;
 
       function resizeCanvas(canvas, context) {
         const bounds = canvas.getBoundingClientRect();
@@ -724,6 +725,7 @@
       function sendPing() {
         applyWaterDepth(depthInput.value);
         applyMaxRange(maxRangeInput.value);
+        lastPingMaxRangeMeters = Number(maxRangeInput.value);
         const options = pingOptions();
         const result = simulatePing(targets, options);
         lastSignal = result.signal;
@@ -763,7 +765,10 @@
       function addCurrentEchoToHistory() {
         if (!historyCountInput.reportValidity()) return;
         const repeatCount = historyCountInput.valueAsNumber;
-        const shot = lastSignal.slice();
+        const shot = {
+          signal: lastSignal.slice(),
+          maxRange: lastPingMaxRangeMeters
+        };
         for (let index = 0; index < repeatCount; index++) {
           echoHistory.unshift(shot);
           if (echoHistory.length > MAX_HISTORY_SHOTS) echoHistory.pop();
@@ -1029,7 +1034,9 @@
       function drawHistory() {
         const size = resizeCanvas(historyCanvas, historyContext);
         const ctx = historyContext;
-        const maxRange = Number(maxRangeInput.value) || DEFAULT_MAX_RANGE_M;
+        const maxRange = echoHistory.length
+          ? Math.max(...echoHistory.map(shot => shot.maxRange))
+          : Number(maxRangeInput.value) || DEFAULT_MAX_RANGE_M;
         ctx.clearRect(0, 0, size.width, size.height);
         ctx.fillStyle = "#18332f";
         ctx.fillRect(0, 0, size.width, size.height);
@@ -1049,11 +1056,13 @@
           const lastShot = Math.max(firstShot + 1, Math.ceil((y + 1) / imageHeight * MAX_HISTORY_SHOTS));
           for (let x = 0; x < imageWidth; x++) {
             const binFraction = (x + 0.5) / imageWidth;
+            const distance = binFraction * maxRange;
             let intensity = 0;
             for (let shotIndex = firstShot; shotIndex < lastShot; shotIndex++) {
-              const signal = echoHistory[shotIndex];
-              if (!signal) continue;
-              const binIndex = Math.min(signal.length - 1, Math.floor(binFraction * signal.length));
+              const shot = echoHistory[shotIndex];
+              if (!shot || distance > shot.maxRange) continue;
+              const binIndex = Math.min(shot.signal.length - 1, Math.floor(distance / shot.maxRange * shot.signal.length));
+              const signal = shot.signal;
               const value = signal[binIndex];
               if (value > 0) {
                 const decibels = Math.max(20 * Math.log10(value), MIN_SIGNAL_DB);
@@ -1076,6 +1085,20 @@
           }
         }
         ctx.putImageData(image, left, top);
+
+        ctx.save();
+        ctx.strokeStyle = "rgba(189, 206, 199, 0.55)";
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 4]);
+        for (const distance of [25, 50, 75]) {
+          if (distance >= maxRange) continue;
+          const x = left / ratio + distance / maxRange * (imageWidth / ratio);
+          ctx.beginPath();
+          ctx.moveTo(x, top / ratio);
+          ctx.lineTo(x, (top + imageHeight) / ratio);
+          ctx.stroke();
+        }
+        ctx.restore();
 
         ctx.font = "9px Aptos, sans-serif";
         ctx.fillStyle = COLORS.labels;
